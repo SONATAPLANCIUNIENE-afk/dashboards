@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Astravas NPP — Radiological Incident Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #F4F6F8; color: #2C3E50; height: 100vh; display: flex; flex-direction: column; }
+
+header {
+  background: #2C3E50;
+  border-bottom: 2px solid #C0392B;
+  padding: 0.75rem 1.5rem;
+  display: flex; align-items: center; gap: 1.2rem; flex-shrink: 0;
+}
+.header-icon {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: #C0392B; display: flex; align-items: center;
+  justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+header h1 { font-size: 15px; font-weight: 700; color: white; letter-spacing: 0.03em; }
+header p  { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
+.hdr-right { margin-left: auto; text-align: right; }
+.hdr-right .badge {
+  display: inline-block; padding: 3px 10px; border-radius: 4px;
+  font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+}
+.badge-ex  { background: #C0392B22; color: #E74C3C; border: 1px solid #C0392B55; }
+.badge-date { font-size: 10px; color: #90A4AE; margin-top: 4px; }
+
+.content { flex: 1; display: flex; overflow: hidden; }
+#map { flex: 1; }
+
+/* INFO PANEL */
+#info-panel {
+  width: 300px; flex-shrink: 0; background: white;
+  border-left: 1px solid #E0E4E8; display: flex; flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-section { border-bottom: 1px solid #ECEFF1; padding: 14px 16px; flex-shrink: 0; }
+.panel-section:last-child { border-bottom: none; }
+.sec-title {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .1em; color: #90A4AE; margin-bottom: 10px; border-bottom: 1px solid #ECEFF1; padding-bottom: 6px;
+}
+
+/* Zone cards */
+.zone-card { border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; border-left: 3px solid; }
+.zone-card:last-child { margin-bottom: 0; }
+.zone-30  { background: #FDEDEC; border-color: #C0392B; }
+.zone-100 { background: #FEF9E7; border-color: #E67E22; }
+.zone-card .z-label { font-size: 11px; font-weight: 700; margin-bottom: 3px; }
+.zone-30  .z-label  { color: #E74C3C; }
+.zone-100 .z-label  { color: #E67E22; }
+.zone-card .z-text  { font-size: 11px; color: #546E7A; line-height: 1.5; margin-top: 3px; }
+
+/* Scenario tabs */
+.scen-tabs { display: flex; gap: 4px; margin-bottom: 10px; }
+.scen-tab {
+  flex: 1; padding: 5px 4px; border-radius: 5px; border: 1px solid #1E2433;
+  background: transparent; color: #90A4AE; font-size: 10px; font-weight: 600;
+  cursor: pointer; text-align: center; transition: all .15s; line-height: 1.3;
+}
+.scen-tab.active-best  { background: #1E4D2B; color: #52BE80; border-color: #27AE60; }
+.scen-tab.active-likely { background: #4A1F0E; color: #E67E22; border-color: #E67E22; }
+.scen-tab.active-worst { background: #4A0E0E; color: #E74C3C; border-color: #C0392B; }
+.scen-body { font-size: 11px; color: #37474F; line-height: 1.6; }
+.scen-body b { color: #1A237E; }
+
+/* Reception towns */
+.town-list { display: flex; flex-direction: column; gap: 5px; }
+.town-row { display: flex; align-items: center; gap: 8px; }
+.town-dot { width: 8px; height: 8px; border-radius: 50%; background: #3498DB; flex-shrink: 0; }
+.town-name { font-size: 12px; color: #263238; font-weight: 500; }
+.town-dist { font-size: 11px; color: #78909C; margin-left: auto; }
+
+/* Stages */
+.stage-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: flex-start; }
+.stage-nr {
+  width: 22px; height: 22px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+}
+.s1 { background: #EBF5FB; color: #2980B9; }
+.s2 { background: #FEF9E7; color: #D35400; }
+.s3 { background: #FDEDEC; color: #C0392B; }
+.stage-txt { font-size: 11px; color: #37474F; line-height: 1.5; }
+.stage-txt b { color: #263238; font-size: 11px; display: block; margin-bottom: 1px; }
+
+/* IM rule */
+.im-rule {
+  background: #EBF5FB; border: 1px solid #AED6F1; border-radius: 6px;
+  padding: 10px 12px; font-size: 11px; color: #37474F; line-height: 1.5;
+}
+.im-rule span { color: #1A5276; font-weight: 600; }
+
+/* Map popup styling */
+.lrk-popup { font-family: 'Segoe UI', Arial, sans-serif; }
+.lrk-popup .pp-title { font-weight: 700; font-size: 13px; margin-bottom: 5px; }
+.lrk-popup .pp-line  { font-size: 11px; color: #555; margin-bottom: 2px; }
+.lrk-popup .pp-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 4px;
+  font-size: 10px; font-weight: 700; color: white; margin-top: 4px;
+}
+
+.flex-grow { flex: 1; overflow-y: auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-icon">☢</div>
+  <div>
+    <h1>ASTRAVAS NPP — RADIOLOGICAL INCIDENT</h1>
+    <p>Scenario Map · Lithuanian Red Cross IM Planning · 2026</p>
+  </div>
+  <div class="hdr-right">
+    <div class="badge badge-ex">Planning Scenario</div>
+    <div class="badge-date">Updated: 2026-04-09</div>
+  </div>
+</header>
+
+<div class="content">
+  <div id="map"></div>
+
+  <div id="info-panel">
+
+    <!-- ZONES -->
+    <div class="panel-section">
+      <div class="sec-title">Exclusion Zones</div>
+      <div class="zone-card zone-30">
+        <div class="z-label">🔴 30 km Zone — Evacuation</div>
+        <div class="z-text">~17,000 residents · Decision H+8 to H+12 · Mandatory evacuation</div>
+      </div>
+      <div class="zone-card zone-100">
+        <div class="z-label">🟠 100 km Zone — Shelter-in-place</div>
+        <div class="z-text">72 hours indoors · Covers Vilnius · LRC HQ inside zone</div>
+      </div>
+    </div>
+
+    <!-- SCENARIOS -->
+    <div class="panel-section">
+      <div class="sec-title">Scenarios</div>
+      <div class="scen-tabs">
+        <button class="scen-tab" id="tab-best"   onclick="setScen('best')">Best<br>case</button>
+        <button class="scen-tab active-likely" id="tab-likely" onclick="setScen('likely')">Most<br>likely</button>
+        <button class="scen-tab" id="tab-worst"  onclick="setScen('worst')">Worst<br>case</button>
+      </div>
+      <div class="scen-body" id="scen-body"></div>
+    </div>
+
+    <!-- RECEPTION TOWNS -->
+    <div class="panel-section">
+      <div class="sec-title">Reception Towns</div>
+      <div class="town-list">
+        <div class="town-row"><div class="town-dot"></div><div class="town-name">Utena</div><div class="town-dist">~85 km from NPP</div></div>
+        <div class="town-row"><div class="town-dot"></div><div class="town-name">Molėtai</div><div class="town-dist">~95 km</div></div>
+        <div class="town-row"><div class="town-dot"></div><div class="town-name">Anykščiai</div><div class="town-dist">~110 km</div></div>
+        <div class="town-row"><div class="town-dot"></div><div class="town-name">Kalvarija</div><div class="town-dist">~195 km</div></div>
+      </div>
+    </div>
+
+    <!-- ACTIVATION STAGES -->
+    <div class="panel-section">
+      <div class="sec-title">LRC Activation Stages</div>
+      <div class="stage-row"><div class="stage-nr s1">1</div><div class="stage-txt"><b>Initial — Enhanced monitoring</b><br>Prepare systems · Monitor state data feeds</div></div>
+      <div class="stage-row"><div class="stage-nr s2">2</div><div class="stage-txt"><b>Partial — Shelter-in-place</b><br>Deploy CEA · Start info dissemination</div></div>
+      <div class="stage-row"><div class="stage-nr s3">3</div><div class="stage-txt"><b>Full — Evacuation order</b><br>SOC + NPOC active · Registration · Aid · RFL</div></div>
+    </div>
+
+    <!-- IM RULE -->
+    <div class="panel-section">
+      <div class="im-rule">
+        <span>IM Rule:</span> Systems must also capture the <b>25% who bypass checkpoints</b> — retroactively.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+
+// ── Scenarios ──────────────────────────────────────────────────────────────
+var SCEN = {
+  best: {
+    cls: 'active-best',
+    html: '<b style="color:#1B5E20">Localised release</b> — No major threat to Lithuania.<br><br>'
+         +'Evacuees: <b>None</b><br>LRC role: <b>Monitoring only</b><br><br>'
+         +'Cloud trajectory does not reach LT. Standard protocols active.'
+  },
+  likely: {
+    cls: 'active-likely',
+    html: '<b style="color:#B71C1C">Significant release</b> — Cloud moves toward Lithuania.<br><br>'
+         +'Evacuees: <b>~17,000</b> (30 km zone)<br>'
+         +'Organised: <b>12,750 (75%)</b><br>'
+         +'Spontaneous: <b>4,250 (25%)</b><br><br>'
+         +'LRC: <b>FULL activation</b> — SOC + NPOC active.'
+  },
+  worst: {
+    cls: 'active-worst',
+    html: '<b style="color:#7B1FA2">Major accident</b> — Wide contamination.<br><br>'
+         +'Evacuees: <b>50,000+</b><br>'
+         +'LRC: <b>FULL + international support</b> needed.<br><br>'
+         +'DREF / Emergency Appeal likely required.'
+  }
+};
+
+var currentScen = 'likely';
+
+function setScen(s) {
+  currentScen = s;
+  ['best','likely','worst'].forEach(function(x) {
+    var btn = document.getElementById('tab-'+x);
+    btn.className = 'scen-tab' + (x===s ? ' '+SCEN[x].cls : '');
+  });
+  document.getElementById('scen-body').innerHTML = SCEN[s].html;
+  updateZoneColors();
+}
+
+function updateZoneColors() {
+  if (zone30) {
+    var col = currentScen==='best' ? '#27AE60' : currentScen==='likely' ? '#E74C3C' : '#8B0000';
+    zone30.setStyle({ color: col, fillColor: col });
+  }
+}
+
+setScen('likely');
+
+// ── Map ────────────────────────────────────────────────────────────────────
+var map = L.map('map', { zoomControl: true }).setView([55.1, 24.5], 7);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap © CartoDB'
+}).addTo(map);
+
+// NPP coordinates
+var NPP = [54.756, 26.085];
+
+// ── 100 km zone ─────────────────────────────────────────────────────────
+L.circle(NPP, {
+  radius: 100000,
+  color: '#E67E22', weight: 1.5, opacity: 0.6,
+  fillColor: '#E67E22', fillOpacity: 0.07,
+  dashArray: '6 4'
+}).addTo(map).bindTooltip(
+  '<b>100 km zone</b><br>Shelter-in-place · 72h<br>Covers Vilnius region',
+  { sticky: false }
+);
+
+// ── 30 km zone ───────────────────────────────────────────────────────────
+var zone30 = L.circle(NPP, {
+  radius: 30000,
+  color: '#E74C3C', weight: 2, opacity: 0.9,
+  fillColor: '#E74C3C', fillOpacity: 0.20
+}).addTo(map).bindTooltip(
+  '<b>30 km Evacuation zone</b><br>~17,000 residents<br>Decision H+8 to H+12',
+  { sticky: false }
+);
+
+// ── NPP marker ────────────────────────────────────────────────────────────
+var nppIcon = L.divIcon({
+  className: '',
+  html: '<div style="width:28px;height:28px;background:#C0392B;border:3px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 12px #C0392Baa">☢</div>',
+  iconSize: [28,28], iconAnchor: [14,14], popupAnchor: [0,-14]
+});
+
+L.marker(NPP, { icon: nppIcon }).addTo(map)
+  .bindPopup('<div class="lrk-popup"><div class="pp-title">☢ Astravas NPP</div>'
+    +'<div class="pp-line">Ostrovets, Belarus</div>'
+    +'<div class="pp-line">54.756°N, 26.085°E</div>'
+    +'<div class="pp-line" style="margin-top:5px">~50 km from Vilnius</div>'
+    +'<span class="pp-badge" style="background:#C0392B">Incident source</span></div>');
+
+// ── LRC HQ ────────────────────────────────────────────────────────────────
+var hqIcon = L.divIcon({
+  className: '',
+  html: '<div style="width:24px;height:24px;background:#2C3E50;border:2.5px solid #E74C3C;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;color:white;font-weight:700;box-shadow:0 2px 6px rgba(0,0,0,0.5)">+</div>',
+  iconSize: [24,24], iconAnchor: [12,12], popupAnchor: [0,-12]
+});
+
+L.marker([54.689, 25.263], { icon: hqIcon }).addTo(map)
+  .bindPopup('<div class="lrk-popup"><div class="pp-title">LRC Headquarters</div>'
+    +'<div class="pp-line">Jasinskio g. 16B, Vilnius</div>'
+    +'<div class="pp-line" style="color:#E74C3C;margin-top:4px">⚠ Inside 100 km zone</div>'
+    +'<span class="pp-badge" style="background:#2C3E50">SOC / NPOC location</span></div>');
+
+// Vilnius city label circle
+L.circle([54.689, 25.263], {
+  radius: 800, color: '#E74C3C', weight: 1.5, opacity: 0.5,
+  fillColor: '#E74C3C', fillOpacity: 0.1, dashArray: '3 3'
+}).addTo(map);
+
+// ── Reception towns ───────────────────────────────────────────────────────
+var towns = [
+  { name: 'Utena',     lat: 55.498, lng: 25.603 },
+  { name: 'Molėtai',   lat: 55.231, lng: 25.418 },
+  { name: 'Anykščiai', lat: 55.525, lng: 25.098 },
+  { name: 'Kalvarija', lat: 54.412, lng: 23.183 },
+];
+
+var townIcon = L.divIcon({
+  className: '',
+  html: '<div style="width:14px;height:14px;background:#3498DB;border:2px solid white;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,0.4)"></div>',
+  iconSize: [14,14], iconAnchor: [7,7], popupAnchor: [0,-7]
+});
+
+towns.forEach(function(t) {
+  L.marker([t.lat, t.lng], { icon: townIcon }).addTo(map)
+    .bindPopup('<div class="lrk-popup"><div class="pp-title">'+t.name+'</div>'
+      +'<div class="pp-line">Reception centre location</div>'
+      +'<span class="pp-badge" style="background:#2E6DA4">Reception town</span></div>');
+});
+
+// ── Evacuation arrows (approximate routes) ─────────────────────────────────
+var evacRoutes = [
+  // NPP → Utena (northeast → south)
+  { pts: [[54.756,26.085],[55.200,25.800],[55.498,25.603]], label:'→ Utena' },
+  // NPP → Molėtai
+  { pts: [[54.756,26.085],[55.000,25.700],[55.231,25.418]], label:'→ Molėtai' },
+  // NPP → Anykščiai
+  { pts: [[54.756,26.085],[55.100,25.300],[55.525,25.098]], label:'→ Anykščiai' },
+];
+
+evacRoutes.forEach(function(r) {
+  L.polyline(r.pts, {
+    color: '#3498DB', weight: 2, opacity: 0.55, dashArray: '8 5'
+  }).addTo(map);
+});
+
+// Arrow to Kalvarija (long distance)
+L.polyline([[54.756,26.085],[54.5,25.0],[54.412,23.183]], {
+  color: '#3498DB', weight: 1.5, opacity: 0.35, dashArray: '6 6'
+}).addTo(map);
+
+// ── Checkpoint locations (approx LT border crossings relevant) ─────────────
+var checkpoints = [
+  { name: 'Medininkai crossing', lat: 54.613, lng: 25.740 },
+  { name: 'Šalčininkai area',    lat: 54.309, lng: 25.387 },
+];
+
+var cpIcon = L.divIcon({
+  className: '',
+  html: '<div style="width:12px;height:12px;background:#F39C12;border:2px solid white;border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,0.4)"></div>',
+  iconSize: [12,12], iconAnchor: [6,6], popupAnchor: [0,-6]
+});
+
+checkpoints.forEach(function(c) {
+  L.marker([c.lat, c.lng], { icon: cpIcon }).addTo(map)
+    .bindPopup('<div class="lrk-popup"><div class="pp-title">'+c.name+'</div>'
+      +'<div class="pp-line">Registration checkpoint</div>'
+      +'<div class="pp-line" style="color:#E67E22">25% may bypass → capture retroactively</div>'
+      +'<span class="pp-badge" style="background:#E67E22">Checkpoint</span></div>');
+});
+
+// ── Legend overlay ─────────────────────────────────────────────────────────
+var legend = L.control({ position: 'bottomleft' });
+legend.onAdd = function() {
+  var div = L.DomUtil.create('div');
+  div.style.cssText = 'background:white;border:1px solid #CFD8DC;border-radius:8px;padding:10px 14px;font-family:Segoe UI,Arial,sans-serif;font-size:11px;color:#546E7A;line-height:2;box-shadow:0 2px 8px rgba(0,0,0,0.1)';
+  div.innerHTML =
+    '<div style="font-size:9px;font-weight:700;letter-spacing:.1em;color:#90A4AE;text-transform:uppercase;margin-bottom:4px">Map Legend</div>'
+    +'<div>☢ <span style="color:#E74C3C">Astravas NPP</span></div>'
+    +'<div><span style="display:inline-block;width:12px;height:12px;background:#E74C3C;border-radius:50%;opacity:0.5;vertical-align:middle;margin-right:5px"></span>30 km evacuation zone</div>'
+    +'<div><span style="display:inline-block;width:12px;height:12px;background:#E67E22;border-radius:50%;opacity:0.4;vertical-align:middle;margin-right:5px"></span>100 km shelter zone</div>'
+    +'<div><span style="display:inline-block;width:10px;height:10px;background:#2C3E50;border:2px solid #E74C3C;border-radius:2px;vertical-align:middle;margin-right:5px"></span>LRC HQ (Vilnius)</div>'
+    +'<div><span style="display:inline-block;width:10px;height:10px;background:#3498DB;border-radius:50%;vertical-align:middle;margin-right:5px"></span>Reception towns</div>'
+    +'<div><span style="display:inline-block;width:10px;height:10px;background:#F39C12;border-radius:2px;vertical-align:middle;margin-right:5px"></span>Checkpoints</div>'
+    +'<div style="color:#3498DB">--- Evacuation routes</div>';
+  return div;
+};
+legend.addTo(map);
+
+</script>
+</body>
+</html>
