@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LRK Sessions 2026 — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --red: #C8102E; --red-h: #a50d26;
+  --bg: #F4F5F7; --bg2: #FFFFFF; --bg3: #EBEDF0;
+  --border: rgba(0,0,0,0.08);
+  --text: #1A1C24; --text2: #3A3E52; --text3: #6B6F82;
+  --green: #1A6B34; --amber: #9E5A00; --blue: #1550A0;
+  --font: 'Sora', sans-serif; --mono: 'DM Mono', monospace;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; line-height: 1.6; padding-bottom: 60px; }
+
+/* HEADER */
+.header { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.header-left { display: flex; align-items: center; gap: 14px; }
+.rk-badge { background: var(--red); color: #fff; font-family: var(--mono); font-size: 10px; font-weight: 500; padding: 4px 9px; letter-spacing: .08em; border-radius: 3px; }
+.header h1 { font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+.header-sub { font-size: 13px; color: var(--text2); font-family: var(--mono); }
+.update-tag { font-family: var(--mono); font-size: 12px; color: var(--text2); border: 1px solid rgba(0,0,0,.1); padding: 3px 10px; border-radius: 20px; }
+
+/* MODULE TABS */
+.module-bar { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 32px; display: flex; gap: 0; }
+.mtab { font-size: 15px; font-weight: 600; padding: 13px 22px; border-bottom: 3px solid transparent; cursor: pointer; color: var(--text3); transition: all .15s; letter-spacing: -.01em; }
+.mtab:hover { color: var(--text2); }
+.mtab.act { color: var(--red); border-bottom-color: var(--red); }
+.mtab-desc { font-size: 12px; font-family: var(--mono); color: var(--text2); margin-left: 6px; }
+
+/* LAYOUT */
+.main { padding: 24px 32px 0; max-width: 1400px; margin: 0 auto; }
+.module-panel { display: none; }
+.module-panel.act { display: block; }
+.sec-label { font-family: var(--mono); font-size: 12px; color: var(--text2); letter-spacing: .08em; font-weight: 600; text-transform: uppercase; margin-bottom: 12px; margin-top: 28px; display: flex; align-items: center; gap: 8px; }
+.sec-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* METRICS */
+.metrics { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; }
+.metric { background: var(--bg2); border: 1px solid rgba(0,0,0,.1); border-radius: 8px; padding: 16px 18px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.m-accent { height: 2px; margin: -16px -18px 12px; border-radius: 8px 8px 0 0; }
+.m-label { font-size: 12px; color: var(--text2); font-family: var(--mono); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+.m-val { font-size: 36px; font-weight: 700; line-height: 1; letter-spacing: -.02em; }
+.m-sub { font-size: 12px; color: var(--text2); margin-top: 5px; }
+
+/* CARDS */
+.row2 { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
+.row3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.card { background: var(--bg2); border: 1px solid rgba(0,0,0,.1); border-radius: 8px; padding: 16px 18px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+.c-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.c-sub { font-size: 13px; color: var(--text2); font-family: var(--mono); margin-bottom: 12px; }
+.legend { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.leg { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); font-weight: 500; }
+.ldot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+
+/* HEATMAP */
+.hm-card { background: var(--bg2); border: 1px solid rgba(0,0,0,.1); border-radius: 8px; padding: 16px 18px; overflow-x: auto; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+.hm { border-collapse: collapse; font-size: 12px; font-family: var(--mono); white-space: nowrap; }
+.hm th { padding: 5px 5px; color: var(--text2); text-align: center; font-weight: 500; font-size: 12px; }
+.hm th.sky-th { text-align: left; min-width: 155px; padding-right: 12px; font-weight: 500; color: var(--text2); }
+.hm td { padding: 2px 3px; text-align: center; }
+.hm-cell { width: 32px; height: 24px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; margin: 1px auto; cursor: default; transition: transform .1s; }
+.hm-cell:hover { transform: scale(1.2); }
+.hm-0  { background: rgba(0,0,0,.04); color: var(--text3); }
+.iv1   { background: #d4edda; color: #1a6630; }
+.iv2   { background: #9dce9d; color: #144d1e; }
+.iv3   { background: #5aab5a; color: #fff; }
+.iv4   { background: #1F7A3C; color: #fff; }
+.su1   { background: #dbeeff; color: #1550A0; }
+.su2   { background: #93c4ec; color: #0d3d7a; }
+.su3   { background: #1A5FAD; color: #fff; }
+.ne-c  { background: #fce8e8; color: #A32D2D; }
+.now-th { color: var(--red) !important; }
+.now-col { border-left: 2px solid rgba(200,16,46,.35) !important; }
+.note-bar { font-size: 12px; font-family: var(--mono); color: var(--text2); padding: 10px 18px; border-top: 1px solid var(--border); }
+
+/* TABLES */
+.t-card { background: var(--bg2); border: 1px solid rgba(0,0,0,.1); border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+.t-header { padding: 14px 18px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
+table.dt { width: 100%; border-collapse: collapse; }
+table.dt th { text-align: left; font-size: 12px; font-family: var(--mono); color: var(--text2); font-weight: 600; padding: 8px 12px; border-bottom: 1px solid var(--border); font-weight: 400; letter-spacing: .04em; white-space: nowrap; }
+table.dt td { padding: 10px 13px; border-bottom: 1px solid rgba(0,0,0,.05); font-size: 14px; vertical-align: middle; }
+table.dt tr:last-child td { border-bottom: none; }
+table.dt tfoot td { border-top: 1px solid var(--border); font-weight: 600; border-bottom: none; color: var(--text2); }
+table.dt tbody tr:hover td { background: rgba(0,0,0,.015); }
+
+/* BADGES */
+.badge { display: inline-block; font-size: 12px; font-family: var(--mono); padding: 3px 9px; border-radius: 3px; letter-spacing: .04em; font-weight: 500; }
+.b-r { background: rgba(200,16,46,.1); color: #a0102a; border: 1px solid rgba(200,16,46,.2); }
+.b-p { background: rgba(26,107,52,.1); color: #1a6b34; border: 1px solid rgba(26,107,52,.2); }
+.b-v { background: rgba(158,90,0,.1); color: #9e5a00; border: 1px solid rgba(158,90,0,.2); }
+.b-s { background: rgba(21,80,160,.1); color: #1550a0; border: 1px solid rgba(21,80,160,.2); }
+
+/* PROGRESS */
+.prog-track { width: 65px; height: 4px; background: rgba(0,0,0,.08); border-radius: 2px; display: inline-block; vertical-align: middle; }
+.prog-fill { height: 100%; border-radius: 2px; }
+.pct-lbl { font-family: var(--mono); font-size: 12px; margin-left: 5px; font-weight: 600; vertical-align: middle; }
+
+/* TABS */
+.tabs { display: flex; gap: 5px; }
+.tab { font-size: 12px; font-family: var(--mono); padding: 6px 14px; border: 1.5px solid rgba(0,0,0,.18); border-radius: 20px; background: #fff; color: var(--text2); cursor: pointer; transition: all .15s; font-weight: 500; }
+.tab:hover { border-color: var(--red); color: var(--red); background: rgba(200,16,46,.04); }
+.tab.act { background: var(--red); color: #fff; border-color: var(--red); }
+.tab[data-reg="East"].act    { background: #C8102E; border-color: #C8102E; color: #fff; }
+.tab[data-reg="South"].act   { background: #1a6b34; border-color: #1a6b34; color: #fff; }
+.tab[data-reg="West"].act  { background: #9e5a00; border-color: #9e5a00; color: #fff; }
+.tab[data-reg="North"].act { background: #1550a0; border-color: #1550a0; color: #fff; }
+.tab[data-reg="East"]:hover    { border-color: #C8102E; color: #C8102E; background: rgba(200,16,46,.05); }
+.tab[data-reg="South"]:hover   { border-color: #1a6b34; color: #1a6b34; background: rgba(26,107,52,.05); }
+.tab[data-reg="West"]:hover  { border-color: #9e5a00; color: #9e5a00; background: rgba(158,90,0,.05); }
+.tab[data-reg="North"]:hover { border-color: #1550a0; color: #1550a0; background: rgba(21,80,160,.05); }
+/* Region group header in heatmap */
+.hm-reg-row td { padding: 6px 0 2px; }
+.hm-reg-hdr { font-size: 12px; font-family: var(--mono); font-weight: 700; padding: 5px 10px; border-radius: 4px; display: inline-block; }
+/* Plan table */
+.plan-grp-cs  { background: rgba(31,122,60,.12); color: #1a6630; }
+.plan-grp-ppb { background: rgba(21,80,160,.12); color: #1550a0; }
+.plan-grp-ppp { background: rgba(127,119,221,.15); color: #4a44a0; }
+.plan-hdr-cs  { background: rgba(31,122,60,.08); }
+.plan-hdr-ppb { background: rgba(21,80,160,.08); }
+.plan-hdr-ppp { background: rgba(127,119,221,.1); }
+.plan-val { font-family: var(--mono); font-size: 12px; font-weight: 500; }
+.plan-dal { color: #1550a0; }
+.plan-mok { color: #1a6630; font-weight: 600; }
+.plan-zero { color: var(--text3); }
+
+.g { color: #1a6630; font-family: var(--mono); font-weight: 500; }
+.b { color: #1550a0; font-family: var(--mono); font-weight: 500; }
+.r { color: #A32D2D; font-family: var(--mono); font-weight: 500; }
+.d { color: var(--text3); font-family: var(--mono); }
+.rank { font-family: var(--mono); font-size: 13px; color: var(--text2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <span class="rk-badge">LRK</span>
+    <div>
+      <h1>Training — Dashboard</h1>
+      <div class="header-sub">Network · January–March 2026</div>
+    </div>
+  </div>
+  <div class="update-tag">Updated: 2026-03-23</div>
+</div>
+
+<div class="module-bar">
+  <div class="mtab act" onclick="switchModule('CS',this)">Civil Security <span class="mtab-desc">CS</span></div>
+  <div class="mtab" onclick="switchModule('PPB',this)">First Aid <span class="mtab-desc">PPB</span></div>
+  <div class="mtab" onclick="switchModule('PPP',this)">Psych. Aid <span class="mtab-desc">PPP</span></div>
+  <div class="mtab" onclick="switchModule('PLANAI',this)">Training Plans <span class="mtab-desc">Q1</span></div>
+</div>
+
+<div class="main" id="main-content"></div>
+
+<script>
+Chart.defaults.color = '#3A3E52';
+Chart.defaults.font.size = 12;
+Chart.defaults.font.family = "'DM Mono', monospace";
+
+const REG = ['East','South','West','North'];
+const REG_COLOR = {'East':'#4a9dd9','South':'#5aab5a','West':'#f0b855','North':'#a09aee'};
+const REG_BADGE = {'East':'b-r','South':'b-p','West':'b-v','North':'b-s'};
+const SKY_REG = {
+  'Vilnius branch':'East','Elektrėnai branch':'East','Ukmergė branch':'East',
+  'Kaunas branch':'South','Alytus branch':'South','Alytus branch':'South',
+  'Raseiniai branch':'South','Vilkaviškis branch':'South',
+  'Klaipėda branch':'West','Tauragė branch':'West',
+  'Šiauliai branch':'North','Panevėžys branch':'North','Utena branch':'North'
+};
+const WEEKS = ['W02','W03','W04','W05','W06','W07','W08','W09','W10','W11','W12','W13'];
+const WK_LBL = {'W02':'1/5','W03':'1/12','W04':'1/19','W05':'1/26','W06':'2/2','W07':'2/9','W08':'2/16','W09':'2/23','W10':'3/2','W11':'3/9','W12':'3/16','W13':'3/23','W14':'3/30','W15':'4/6','W16':'4/13','W17':'4/20','W18':'4/27'};
+const NOW_W = 'W11';
+const PAST_W = new Set(['W02','W03','W04','W05','W06','W07','W08','W09','W10']);
+
+// ── DATA ────────────────────────────────────────────────────────────────────
+// Extended weekly data (W02-W18)
+// CS sky weeks: ['W02', 'W03', 'W04', 'W05', 'W06', 'W07', 'W08', 'W09', 'W10', 'W11', 'W12', 'W13', 'W14', 'W15', 'W16', 'W17']
+const WEEKS_CS = ["W02", "W03", "W04", "W05", "W06", "W07", "W08", "W09", "W10", "W11", "W12", "W13", "W14", "W15", "W16", "W17"];
+const coordWeek_CS = {'Urtė V.':{reg:'East',sky:'Vilnius branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:2,ne:0,su:0},W04:{iv:3,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:3,ne:0,su:0},W08:{iv:3,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:2,ne:0,su:0},W12:{iv:3,ne:0,su:0},W13:{iv:1,ne:0,su:3},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:1},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Anželika B.':{reg:'East',sky:'Vilnius branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:1,ne:0,su:0},W04:{iv:2,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:4,ne:0,su:0},W07:{iv:3,ne:0,su:0},W08:{iv:2,ne:0,su:0},W09:{iv:5,ne:0,su:0},W10:{iv:2,ne:1,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:4,ne:0,su:0},W13:{iv:1,ne:0,su:9},W14:{iv:0,ne:0,su:2},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:2},W17:{iv:0,ne:0,su:2},W18:{iv:0,ne:0,su:2}}},'Rasa K.':{reg:'East',sky:'Elektrėnai branch',weeks:{W02:{iv:1,ne:0,su:0},W03:{iv:4,ne:0,su:0},W04:{iv:3,ne:0,su:0},W05:{iv:3,ne:2,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:6,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:4,ne:0,su:0},W11:{iv:3,ne:1,su:0},W12:{iv:2,ne:0,su:0},W13:{iv:0,ne:1,su:5},W14:{iv:0,ne:0,su:6},W15:{iv:0,ne:0,su:1},W16:{iv:0,ne:0,su:3},W17:{iv:0,ne:0,su:5},W18:{iv:0,ne:0,su:0}}},'Jolita C.':{reg:'East',sky:'Ukmergė branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:2,ne:0,su:0},W11:{iv:3,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Zita M.':{reg:'East',sky:'Vilnius branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:1,ne:0,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Lina F.':{reg:'South',sky:'Vilkaviškis branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:2,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:2,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:3,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:2},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:1},W17:{iv:0,ne:0,su:4},W18:{iv:0,ne:0,su:2}}},'Roberta V.':{reg:'South',sky:'Kaunas branch',weeks:{W02:{iv:2,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:1,ne:1,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:1,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:4,ne:1,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:1},W16:{iv:0,ne:0,su:3},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:0}}},'Karolis J.':{reg:'South',sky:'Kaunas branch',weeks:{W02:{iv:1,ne:0,su:0},W03:{iv:1,ne:0,su:0},W04:{iv:2,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:2,ne:0,su:0},W09:{iv:5,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:2},W17:{iv:0,ne:0,su:2},W18:{iv:0,ne:0,su:0}}},'Alma K.':{reg:'South',sky:'Raseiniai branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:1,ne:0,su:0},W05:{iv:3,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Edita K.':{reg:'South',sky:'Alytus branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:8,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:5,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:3,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:3,ne:0,su:0},W13:{iv:0,ne:0,su:2},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:2},W17:{iv:0,ne:0,su:4},W18:{iv:0,ne:0,su:0}}},'Ugnė S.':{reg:'South',sky:'Alytus branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:3,ne:0,su:0},W10:{iv:8,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:1,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:7},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Robertas V.':{reg:'West',sky:'Klaipėda branch',weeks:{W02:{iv:0,ne:1,su:0},W03:{iv:2,ne:0,su:0},W04:{iv:0,ne:1,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:2,ne:1,su:0},W11:{iv:2,ne:0,su:0},W12:{iv:2,ne:0,su:0},W13:{iv:1,ne:0,su:1},W14:{iv:0,ne:0,su:2},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:4},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Jolita Z.':{reg:'West',sky:'Tauragė branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:2,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:3,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:4,ne:0,su:0},W10:{iv:2,ne:0,su:0},W11:{iv:4,ne:0,su:0},W12:{iv:3,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:0}}},'Irina L.':{reg:'West',sky:'Klaipėda branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:3,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:3,ne:0,su:0},W11:{iv:3,ne:0,su:0},W12:{iv:1,ne:0,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:3},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:0}}},'Agnė T.':{reg:'North',sky:'Panevėžys branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:1,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Ingrida T.':{reg:'North',sky:'Šiauliai branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:2,ne:0,su:0},W04:{iv:1,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:3,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:2,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:1,ne:1,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Edita V.':{reg:'North',sky:'Utena branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:1,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:2,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:2,ne:1,su:0},W11:{iv:0,ne:1,su:0},W12:{iv:2,ne:1,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Valda P.':{reg:'North',sky:'Utena branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:1,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Grėta V.':{reg:'North',sky:'Šiauliai branch',weeks:{W02:{iv:1,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:1,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:3,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:2,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:1,ne:0,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:1,ne:0,su:0},W13:{iv:2,ne:0,su:1},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:3},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:2}}},'Silvestras P.':{reg:'North',sky:'Šiauliai branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:5,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:3,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:5,ne:0,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:2,ne:1,su:0},W13:{iv:0,ne:0,su:2},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}}};
+const skyWeek_CS = {'Vilnius branch':{W02:{iv:0,ne:0,su:0},W03:{iv:3,ne:0,su:0},W04:{iv:5,ne:0,su:0},W05:{iv:2,ne:0,su:0},W06:{iv:6,ne:0,su:0},W07:{iv:6,ne:0,su:0},W08:{iv:5,ne:0,su:0},W09:{iv:7,ne:0,su:0},W10:{iv:2,ne:1,su:0},W11:{iv:3,ne:0,su:0},W12:{iv:9,ne:0,su:0},W13:{iv:2,ne:0,su:13},W14:{iv:0,ne:0,su:3},W15:{iv:0,ne:0,su:1},W16:{iv:0,ne:0,su:2},W17:{iv:0,ne:0,su:2},W18:{iv:0,ne:0,su:2}},'Elektrėnai branch':{W02:{iv:1,ne:0,su:0},W03:{iv:4,ne:0,su:0},W04:{iv:3,ne:0,su:0},W05:{iv:3,ne:2,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:6,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:4,ne:0,su:0},W11:{iv:3,ne:1,su:0},W12:{iv:2,ne:0,su:0},W13:{iv:0,ne:1,su:5},W14:{iv:0,ne:0,su:6},W15:{iv:0,ne:0,su:1},W16:{iv:0,ne:0,su:3},W17:{iv:0,ne:0,su:5},W18:{iv:0,ne:0,su:0}},'Ukmergė branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:2,ne:0,su:0},W11:{iv:3,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}},'Vilkaviškis branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:2,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:2,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:3,ne:0,su:0},W12:{iv:2,ne:0,su:0},W13:{iv:0,ne:0,su:2},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:1},W17:{iv:0,ne:0,su:4},W18:{iv:0,ne:0,su:2}},'Kaunas branch':{W02:{iv:3,ne:0,su:0},W03:{iv:1,ne:0,su:0},W04:{iv:2,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:3,ne:0,su:0},W07:{iv:2,ne:1,su:0},W08:{iv:3,ne:0,su:0},W09:{iv:5,ne:0,su:0},W10:{iv:3,ne:1,su:0},W11:{iv:1,ne:1,su:0},W12:{iv:8,ne:1,su:0},W13:{iv:0,ne:0,su:3},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:3},W16:{iv:0,ne:0,su:6},W17:{iv:0,ne:0,su:3},W18:{iv:0,ne:0,su:0}},'Raseiniai branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:1,ne:0,su:0},W05:{iv:3,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}},'Alytus branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:8,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:5,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:4,ne:0,su:0},W10:{iv:11,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:3,ne:0,su:0},W13:{iv:1,ne:0,su:2},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:7},W16:{iv:0,ne:0,su:2},W17:{iv:0,ne:0,su:4},W18:{iv:0,ne:0,su:0}},'Klaipėda branch':{W02:{iv:0,ne:1,su:0},W03:{iv:2,ne:0,su:0},W04:{iv:0,ne:1,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:4,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:3,ne:0,su:0},W10:{iv:5,ne:1,su:0},W11:{iv:5,ne:0,su:0},W12:{iv:3,ne:0,su:0},W13:{iv:1,ne:0,su:2},W14:{iv:0,ne:0,su:3},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:8},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:0}},'Tauragė branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:2,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:3,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:4,ne:0,su:0},W10:{iv:2,ne:0,su:0},W11:{iv:4,ne:0,su:0},W12:{iv:3,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:2},W18:{iv:0,ne:0,su:0}},'Panevėžys branch':{W02:{iv:0,ne:0,su:0},W03:{iv:2,ne:0,su:0},W04:{iv:2,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:1,ne:1,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:2,ne:1,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}},'Utena branch':{W02:{iv:0,ne:0,su:0},W03:{iv:1,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:2,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:2,ne:0,su:0},W11:{iv:0,ne:1,su:0},W12:{iv:3,ne:1,su:0},W13:{iv:0,ne:0,su:2},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:3},W16:{iv:0,ne:0,su:2},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:1}},'Šiauliai branch':{W02:{iv:1,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:1,ne:0,su:0},W05:{iv:6,ne:0,su:0},W06:{iv:4,ne:0,su:0},W07:{iv:4,ne:0,su:0},W08:{iv:3,ne:0,su:0},W09:{iv:3,ne:0,su:0},W10:{iv:8,ne:0,su:0},W11:{iv:2,ne:0,su:0},W12:{iv:3,ne:1,su:0},W13:{iv:2,ne:0,su:2},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:3},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:2}}};
+// PPB sky weeks: ['W02', 'W03', 'W04', 'W05', 'W06', 'W07', 'W08', 'W09', 'W10', 'W11', 'W12', 'W13', 'W14', 'W15', 'W16', 'W17', 'W18']
+const WEEKS_PPB = ["W02", "W03", "W04", "W05", "W06", "W07", "W08", "W09", "W10", "W11", "W12", "W13", "W14", "W15", "W16", "W17", "W18"];
+const coordWeek_PPB = {'Rasa K.':{reg:'East',sky:'Elektrėnai branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:1,ne:0,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:1},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Urtė V.':{reg:'East',sky:'Vilnius branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:1,ne:0,su:0},W11:{iv:2,ne:0,su:0},W12:{iv:4,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:1},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:1}}},'Jolita C.':{reg:'East',sky:'Ukmergė branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:1,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Zita M.':{reg:'East',sky:'Vilnius branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:2,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Gabrielė V.':{reg:'South',sky:'Kaunas branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:3,ne:0,su:0},W05:{iv:23,ne:0,su:0},W06:{iv:9,ne:0,su:0},W07:{iv:2,ne:0,su:0},W08:{iv:4,ne:0,su:0},W09:{iv:9,ne:0,su:0},W10:{iv:2,ne:0,su:0},W11:{iv:6,ne:0,su:0},W12:{iv:5,ne:0,su:0},W13:{iv:0,ne:0,su:7},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:3},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:3},W18:{iv:0,ne:0,su:2}}},'Ugnė S.':{reg:'South',sky:'Alytus branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:4,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:3,ne:0,su:0},W10:{iv:9,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:4,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:9},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Edita K.':{reg:'South',sky:'Alytus branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:4,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:3,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:3},W18:{iv:0,ne:0,su:0}}},'Lina F.':{reg:'South',sky:'Vilkaviškis branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:1,ne:0,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:1,ne:0,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:1},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:1}}},'Robertas V.':{reg:'West',sky:'Klaipėda branch',weeks:{W02:{iv:1,ne:0,su:0},W03:{iv:1,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:3,ne:0,su:0},W11:{iv:2,ne:0,su:0},W12:{iv:1,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:2},W15:{iv:0,ne:0,su:1},W16:{iv:0,ne:0,su:3},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Jolita Z.':{reg:'West',sky:'Tauragė branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:4,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:2,ne:0,su:0},W08:{iv:2,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:4,ne:0,su:0},W11:{iv:3,ne:0,su:0},W12:{iv:6,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Irina L.':{reg:'West',sky:'Klaipėda branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:3,ne:0,su:0},W11:{iv:4,ne:0,su:0},W12:{iv:1,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:1},W16:{iv:0,ne:0,su:2},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Edita V.':{reg:'',sky:'',weeks:{W02:{iv:2,ne:0,su:0},W03:{iv:2,ne:0,su:0},W04:{iv:1,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:4,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:1},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:1}}},'Valda P.':{reg:'North',sky:'Šiauliai branch',weeks:{W02:{iv:1,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Ingrida T.':{reg:'North',sky:'Panevėžys branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:1,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:3,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:1,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:1,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Grėta V.':{reg:'North',sky:'Šiauliai branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:1,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:2,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:3,ne:0,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:2,ne:0,su:0},W13:{iv:2,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:1},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:0}}},'Silvestras P.':{reg:'North',sky:'Šiauliai branch',weeks:{W02:{iv:1,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:3,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:1,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:1,ne:1,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}},'Agnė T.':{reg:'North',sky:'Panevėžys branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:2,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}}}};
+const skyWeek_PPB = {'Vilnius branch':{W02:{iv:1,ne:0,su:0},W03:{iv:4,ne:0,su:0},W04:{iv:3,ne:0,su:0},W05:{iv:4,ne:0,su:0},W06:{iv:3,ne:0,su:0},W07:{iv:3,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:10,ne:0,su:0},W10:{iv:3,ne:0,su:0},W11:{iv:2,ne:0,su:0},W12:{iv:6,ne:0,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:1},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:1}},'Elektrėnai branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:1,ne:0,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:1},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}},'Ukmergė branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:1,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}},'Kaunas branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:3,ne:0,su:0},W05:{iv:23,ne:0,su:0},W06:{iv:9,ne:0,su:0},W07:{iv:2,ne:0,su:0},W08:{iv:4,ne:0,su:0},W09:{iv:9,ne:0,su:0},W10:{iv:2,ne:0,su:0},W11:{iv:6,ne:0,su:0},W12:{iv:5,ne:0,su:0},W13:{iv:0,ne:0,su:7},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:3},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:3},W18:{iv:0,ne:0,su:2}},'Alytus branch':{W02:{iv:0,ne:0,su:0},W03:{iv:4,ne:0,su:0},W04:{iv:4,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:4,ne:0,su:0},W10:{iv:12,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:4,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:1},W15:{iv:0,ne:0,su:9},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:3},W18:{iv:0,ne:0,su:0}},'Vilkaviškis branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:1,ne:0,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:1,ne:0,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:1},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:1}},'Klaipėda branch':{W02:{iv:1,ne:0,su:0},W03:{iv:1,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:2,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:6,ne:0,su:0},W11:{iv:6,ne:0,su:0},W12:{iv:3,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:3},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:5},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}},'Tauragė branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:4,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:2,ne:0,su:0},W08:{iv:2,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:4,ne:0,su:0},W11:{iv:3,ne:0,su:0},W12:{iv:6,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}},'Utena branch':{W02:{iv:2,ne:0,su:0},W03:{iv:2,ne:0,su:0},W04:{iv:1,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:1,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:4,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}},'Šiauliai branch':{W02:{iv:2,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:1,ne:0,su:0},W05:{iv:4,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:2,ne:0,su:0},W08:{iv:2,ne:0,su:0},W09:{iv:2,ne:0,su:0},W10:{iv:4,ne:0,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:3,ne:1,su:0},W13:{iv:2,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:1},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:0}},'Panevėžys branch':{W02:{iv:0,ne:0,su:0},W03:{iv:1,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:3,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:1,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:3,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0},W17:{iv:0,ne:0,su:0},W18:{iv:0,ne:0,su:0}},'':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:1},W17:{iv:0,ne:0,su:1},W18:{iv:0,ne:0,su:1}}};
+// PPP sky weeks: ['W02', 'W03', 'W04', 'W05', 'W06', 'W07', 'W08', 'W09', 'W10', 'W11', 'W12', 'W13', 'W14', 'W15', 'W16']
+const WEEKS_PPP = ["W02", "W03", "W04", "W05", "W06", "W07", "W08", "W09", "W10", "W11", "W12", "W13", "W14", "W15", "W16"];
+const coordWeek_PPP = {'Anželika B.':{reg:'East',sky:'Vilnius branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0}}},'Rasa K.':{reg:'East',sky:'Elektrėnai branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:1}}},'Urtė V.':{reg:'East',sky:'Vilnius branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:2,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0}}},'Gabrielė V.':{reg:'South',sky:'Kaunas branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:1,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0}}},'Irina L.':{reg:'West',sky:'Klaipėda branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:1},W16:{iv:0,ne:0,su:0}}},'Robertas V.':{reg:'West',sky:'Klaipėda branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:1},W16:{iv:0,ne:0,su:1}}},'Silvestras P.':{reg:'North',sky:'Šiauliai branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:1,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:0}}},'Ingrida T.':{reg:'North',sky:'Panevėžys branch',weeks:{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:2,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0}}}};
+const skyWeek_PPP = {'Vilnius branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:1,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:2,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0}},'Elektrėnai branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:1,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:1}},'Kaunas branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:1,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:1,ne:0,su:0},W12:{iv:1,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0}},'Klaipėda branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:1,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:1}},'Šiauliai branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:2,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:0,ne:0,su:0},W12:{iv:0,ne:1,su:0},W13:{iv:0,ne:0,su:1},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:2},W16:{iv:0,ne:0,su:0}},'Panevėžys branch':{W02:{iv:0,ne:0,su:0},W03:{iv:0,ne:0,su:0},W04:{iv:0,ne:0,su:0},W05:{iv:0,ne:0,su:0},W06:{iv:0,ne:0,su:0},W07:{iv:0,ne:0,su:0},W08:{iv:0,ne:0,su:0},W09:{iv:0,ne:0,su:0},W10:{iv:0,ne:0,su:0},W11:{iv:2,ne:0,su:0},W12:{iv:0,ne:0,su:0},W13:{iv:0,ne:0,su:0},W14:{iv:0,ne:0,su:0},W15:{iv:0,ne:0,su:0},W16:{iv:0,ne:0,su:0}}};
+
+const MODULES = {
+  CS: {
+    label: 'Civil Security (CS)',
+    planMen: 337,
+    regPlan: {'East':102,'South':84,'West':67,'North':84},
+    monthly: {January:{iv:61,ne:5,su:0},February:{iv:110,ne:0,su:0},March:{iv:86,ne:10,su:57}},
+    regData: {
+      'East':   {sau:21,vas:34,kovIv:29,kovSu:21},
+      'South':  {sau:22,vas:32,kovIv:22,kovSu:18},
+      'West': {sau:5, vas:19,kovIv:25,kovSu:2},
+      'North':{sau:13,vas:25,kovIv:10,kovSu:16}
+    },
+    skyData: {
+      'Vilnius branch':    {reg:'East',  plan:135, sau:10,vas:22,kovIv:16,kovSu:13,coords:2},
+      'Elektrėnai branch':   {reg:'East',  plan:9, sau:11,vas:10,kovIv:8, kovSu:8, coords:2},
+      'Ukmergė branch':    {reg:'East',  plan:9, sau:0, vas:2, kovIv:5, kovSu:0, coords:1},
+      'Kaunas branch':       {reg:'South', plan:62, sau:7, vas:13,kovIv:4, kovSu:12,coords:2},
+      'Alytus branch':     {reg:'South', plan:42, sau:9, vas:12,kovIv:14,kovSu:3, coords:2},
+      'Raseiniai branch':    {reg:'South', plan:4, sau:4, vas:3, kovIv:0, kovSu:1, coords:1},
+      'Vilkaviškis branch': {reg:'South', plan:19, sau:2, vas:4, kovIv:4, kovSu:2, coords:1},
+      'Klaipėda branch':   {reg:'West',plan:49, sau:2, vas:9, kovIv:15,kovSu:2, coords:2},
+      'Tauragė branch':    {reg:'West',plan:19, sau:3, vas:10,kovIv:9, kovSu:0, coords:1},
+      'Šiauliai branch':     {reg:'North',plan:39,sau:8, vas:14,kovIv:2, kovSu:14,coords:3},
+      'Panevėžys branch':   {reg:'North',plan:30,sau:3, vas:5, kovIv:4, kovSu:0, coords:1},
+      'Utena branch':      {reg:'North',plan:15,sau:2, vas:6, kovIv:5, kovSu:2, coords:1}
+    },
+    coordData: [
+      {name:'Rasa K.',     sky:'Elektrėnai branch',   reg:'East',   iv:29,su:8, ne:3},
+      {name:'Anželika B.',    sky:'Vilnius branch',    reg:'East',   iv:26,su:8, ne:1},
+      {name:'Edita K.',  sky:'Alytus branch',     reg:'South',  iv:22,su:2, ne:0},
+      {name:'Jolita Z.',         sky:'Tauragė branch',    reg:'West', iv:22,su:0, ne:0},
+      {name:'Urtė V.',    sky:'Vilnius branch',    reg:'East',   iv:20,su:3, ne:0},
+      {name:'Karolis J.',  sky:'Kaunas branch',       reg:'South',  iv:15,su:0, ne:0},
+      {name:'Ugnė S.',     sky:'Alytus branch',     reg:'South',  iv:13,su:1, ne:0},
+      {name:'Robertas V.', sky:'Klaipėda branch',   reg:'West', iv:13,su:1, ne:3},
+      {name:'Silvestras P.',   sky:'Šiauliai branch',     reg:'North',iv:12,su:14,ne:1},
+      {name:'Edita V.',     sky:'Utena branch',      reg:'North',iv:10,su:2, ne:1},
+      {name:'Ingrida T.',   sky:'Panevėžys branch',   reg:'North',iv:9, su:0, ne:2},
+      {name:'Grėta V.',     sky:'Šiauliai branch',     reg:'North',iv:8, su:3, ne:0},
+      {name:'Lina F.',     sky:'Vilkaviškis branch', reg:'South',  iv:8, su:2, ne:0},
+      {name:'Alma K.',    sky:'Raseiniai branch',    reg:'South',  iv:7, su:1, ne:0},
+      {name:'Irina L.',      sky:'Klaipėda branch',   reg:'West', iv:6, su:1, ne:0},
+      {name:'Roberta V.', sky:'Kaunas branch',       reg:'South',  iv:5, su:7, ne:1},
+      {name:'Jolita C.',    sky:'Ukmergė branch',    reg:'East',   iv:5, su:0, ne:0},
+      {name:'Valda P.',     sky:'Šiauliai branch',     reg:'North',iv:1, su:0, ne:0},
+      {name:'Zita M.',    sky:'Elektrėnai branch',   reg:'East',   iv:0, su:1, ne:0}
+    ],
+    weeks: WEEKS_CS,
+    coordWeekData: coordWeek_CS,
+    hmData: skyWeek_CS
+  },
+  PPB: {
+    label: 'First Aid Basic (PPB)',
+    planMen: 119,
+    regPlan: {'East':35,'South':30,'West':24,'North':30},
+    monthly: {January:{iv:66,ne:0,su:0},February:{iv:75,ne:0,su:0},March:{iv:71,ne:1,su:28}},
+    regData: {
+      'East':   {sau:13,vas:19,kovIv:8, kovSu:5},
+      'South':  {sau:33,vas:29,kovIv:32,kovSu:9},
+      'West': {sau:7, vas:12,kovIv:21,kovSu:7},
+      'North':{sau:13,vas:15,kovIv:10,kovSu:7}
+    },
+    skyData: {
+      'Kaunas branch':       {reg:'South', plan:25,sau:25,vas:25,kovIv:13,kovSu:7, coords:1},
+      'Vilnius branch':    {reg:'East',  plan:50,sau:13,vas:17,kovIv:7, kovSu:3, coords:2},
+      'Šiauliai branch':     {reg:'North',plan:25,sau:7,vas:8, kovIv:2, kovSu:6, coords:1},
+      'Tauragė branch':    {reg:'West',plan:11,sau:5, vas:8, kovIv:7, kovSu:6, coords:1},
+      'Alytus branch':     {reg:'South', plan:20,sau:8, vas:4, kovIv:16,kovSu:1, coords:2},
+      'Utena branch':      {reg:'North',plan:9,sau:5,vas:4, kovIv:5, kovSu:0, coords:1},
+      'Klaipėda branch':   {reg:'West',plan:29,sau:2, vas:4, kovIv:14,kovSu:1, coords:2},
+      'Panevėžys branch':   {reg:'North',plan:17,sau:1,vas:3, kovIv:3, kovSu:1, coords:1},
+      'Elektrėnai branch':   {reg:'East',  plan:5,sau:0, vas:2, kovIv:1, kovSu:1, coords:1},
+      'Vilkaviškis branch': {reg:'South', plan:5,sau:0, vas:0, kovIv:3, kovSu:1, coords:1},
+      'Ukmergė branch':    {reg:'East',  plan:5,sau:0, vas:0, kovIv:0, kovSu:1, coords:0}
+    },
+    coordData: [
+      {name:'Gabrielė V.',sky:'Kaunas branch',      reg:'South',  iv:63,su:7, ne:0},
+      {name:'Ugnė S.',     sky:'Alytus branch',    reg:'South',  iv:20,su:1, ne:0},
+      {name:'Jolita Z.',         sky:'Tauragė branch',   reg:'West', iv:20,su:6, ne:0},
+      {name:'Edita V.',     sky:'Utena branch',     reg:'North',iv:14,su:0, ne:0},
+      {name:'Robertas V.', sky:'Klaipėda branch',  reg:'West', iv:10,su:0, ne:0},
+      {name:'Irina L.',      sky:'Klaipėda branch',  reg:'West', iv:10,su:0, ne:0},
+      {name:'Grėta V.',     sky:'Šiauliai branch',    reg:'North',iv:10,su:4, ne:0},
+      {name:'Edita K.',  sky:'Alytus branch',    reg:'South',  iv:8, su:0, ne:0},
+      {name:'Anželika B.',    sky:'Vilnius branch',   reg:'East',   iv:8, su:2, ne:0},
+      {name:'Ingrida T.',   sky:'Panevėžys branch',  reg:'North',iv:7, su:1, ne:0},
+      {name:'Urtė V.',    sky:'Vilnius branch',   reg:'East',   iv:7, su:1, ne:0},
+      {name:'Lina F.',     sky:'Vilkaviškis branch',reg:'South',  iv:3, su:1, ne:0},
+      {name:'Edita V.',     sky:'Utena branch',     reg:'North',iv:3, su:0, ne:0},
+      {name:'Rasa K.',     sky:'Elektrėnai branch',  reg:'East',   iv:1, su:1, ne:0},
+      {name:'Jolita C.',    sky:'Ukmergė branch',   reg:'East',   iv:0, su:1, ne:0}
+    ],
+    weeks: WEEKS_PPB,
+    coordWeekData: coordWeek_PPB,
+    hmData: skyWeek_PPB
+  },
+  PPP: {
+    label: 'Psychological First Aid (PPP)',
+    planMen: 27,
+    regPlan: {'East':8,'South':7,'West':5,'North':7},
+    monthly: {January:{iv:1,ne:0,su:0},February:{iv:5,ne:0,su:0},March:{iv:5,ne:1,su:3}},
+    regData: {
+      'East':   {sau:0,vas:2,kovIv:2,kovSu:1},
+      'South':  {sau:1,vas:0,kovIv:1,kovSu:1},
+      'West': {sau:0,vas:1,kovIv:0,kovSu:0},
+      'North':{sau:0,vas:2,kovIv:2,kovSu:1}
+    },
+    skyData: {
+      'Šiauliai branch':     {reg:'North',plan:11,sau:0,vas:2,kovIv:0,kovSu:1,coords:1},
+      'Vilnius branch':    {reg:'East',   plan:10,sau:0,vas:1,kovIv:2,kovSu:0,coords:2},
+      'Elektrėnai branch':   {reg:'East',   plan:2,sau:0,vas:1,kovIv:0,kovSu:1,coords:1},
+      'Kaunas branch':       {reg:'South',  plan:11,sau:1,vas:0,kovIv:1,kovSu:1,coords:1},
+      'Klaipėda branch':   {reg:'West', plan:7,sau:0,vas:1,kovIv:0,kovSu:0,coords:1},
+      'Panevėžys branch':   {reg:'North',plan:0,sau:0,vas:0,kovIv:2,kovSu:0,coords:1}
+    },
+    coordData: [
+      {name:'Urtė V.',    sky:'Vilnius branch',   reg:'East',   iv:2,su:0,ne:0},
+      {name:'Gabrielė V.',sky:'Kaunas branch',      reg:'South',  iv:2,su:1,ne:0},
+      {name:'Silvestras P.',   sky:'Šiauliai branch',    reg:'North',iv:2,su:1,ne:1},
+      {name:'Ingrida T.',   sky:'Panevėžys branch',  reg:'North',iv:2,su:0,ne:0},
+      {name:'Anželika B.',    sky:'Vilnius branch',   reg:'East',   iv:1,su:0,ne:0},
+      {name:'Rasa K.',     sky:'Elektrėnai branch',  reg:'East',   iv:1,su:1,ne:0},
+      {name:'Irina L.',      sky:'Klaipėda branch',  reg:'West', iv:1,su:0,ne:0}
+    ],
+    weeks: WEEKS_PPP,
+    coordWeekData: coordWeek_PPP,
+    hmData: skyWeek_PPP
+  }
+};
+
+// ── HELPERS ─────────────────────────────────────────────────────────────────
+let activeCharts = [];
+function clearCharts(){ activeCharts.forEach(c=>c.destroy()); activeCharts=[]; }
+function mkChart(id, cfg){ const c=new Chart(document.getElementById(id),cfg); activeCharts.push(c); return c; }
+function pctColor(p){ return p>=85?'#1a6630':p>=60?'#9e5a00':'#A32D2D'; }
+function progBar(pct){
+  if(pct===null||pct===undefined) return '<span class="d">—</span>';
+  const w=Math.min(pct,100), c=pctColor(pct);
+  return `<div class="prog-track"><div class="prog-fill" style="width:${w}%;background:${c}"></div></div><span class="pct-lbl" style="color:${c}">${pct}%</span>`;
+}
+function d0(v){ return (!v||v===0)?'<span class="d">—</span>':v; }
+
+function hmCell(d, w){
+  if(d.ne>0) return `<div class="hm-cell ne-c">${d.ne}✗</div>`;
+  if(PAST_W.has(w)||w===NOW_W){
+    if(!d.iv) return `<div class="hm-cell hm-0">·</div>`;
+    const cls=d.iv>=5?'iv4':d.iv>=3?'iv3':d.iv>=2?'iv2':'iv1';
+    return `<div class="hm-cell ${cls}">${d.iv}</div>`;
+  } else {
+    if(!d.su) return `<div class="hm-cell hm-0">·</div>`;
+    const cls=d.su>=5?'su3':d.su>=3?'su2':'su1';
+    return `<div class="hm-cell ${cls}">${d.su}</div>`;
+  }
+}
+
+// ── RENDER MODULE ────────────────────────────────────────────────────────────
+function renderModule(key){
+  clearCharts();
+  const m = MODULES[key];
+  const hasPlan = m.planMen !== null;
+  const men = m.monthly;
+  const totIv = Object.values(men).reduce((a,v)=>a+v.iv,0);
+  const totSv = men.January.iv + men.February.iv;
+  const kovSu = men.March.su;
+  const prog3 = totIv + kovSu;
+  const pct2 = hasPlan ? Math.round(totSv/(m.planMen*2)*100) : null;
+  const pct3 = hasPlan ? Math.round(prog3/(m.planMen*3)*100) : null;
+  const totNe = Object.values(men).reduce((a,v)=>a+(v.ne||0),0);
+
+  const html = `
+<div class="sec-label">Key Indicators</div>
+<div class="metrics">
+  <div class="metric">
+    <div class="m-accent" style="background:#1F7A3C"></div>
+    <div class="m-label">Completed (Jan+Feb)</div>
+    <div class="m-val" style="color:#1a6630">${totSv}</div>
+    <div class="m-sub">${hasPlan?`iš ${m.planMen*2} of plan — ${pct2}%`:'total Jan+Feb'}</div>
+  </div>
+  <div class="metric">
+    <div class="m-accent" style="background:#1A5FAD"></div>
+    <div class="m-label">Completed (Mar, partial)</div>
+    <div class="m-val" style="color:#1550a0">${men.March.iv}</div>
+    <div class="m-sub">+ ${kovSu} planned for Mar</div>
+  </div>
+  <div class="metric">
+    <div class="m-accent" style="background:#9e5a00"></div>
+    <div class="m-label">Forecast Jan–Mar</div>
+    <div class="m-val" style="color:#9e5a00">${hasPlan?pct3+'%':prog3}</div>
+    <div class="m-sub">${hasPlan?`${prog3} iš ${m.planMen*3} plano`:'total'}</div>
+  </div>
+  <div class="metric">
+    <div class="m-accent" style="background:#C8102E"></div>
+    <div class="m-label">Cancelled</div>
+    <div class="m-val" style="color:#A32D2D">${totNe}</div>
+    <div class="m-sub">iš ${totIv+totNe} finalised</div>
+  </div>
+  <div class="metric">
+    <div class="m-accent" style="background:rgba(0,0,0,.15)"></div>
+    <div class="m-label">Coordinators</div>
+    <div class="m-val">${m.coordData.length}</div>
+    <div class="m-sub">active over 3 months</div>
+  </div>
+</div>
+
+<div class="sec-label">Event Dynamics</div>
+<div class="row2" style="margin-bottom:12px">
+  <div class="card">
+    <div class="c-title">Events by month</div>
+    <div class="c-sub">March: completed + planned (month in progress)</div>
+    <div class="legend">
+      <div class="leg"><div class="ldot" style="background:#1F7A3C"></div>Completed</div>
+      <div class="leg"><div class="ldot" style="background:#C8102E"></div>Cancelled</div>
+      <div class="leg"><div class="ldot" style="background:#1A5FAD"></div>Planned</div>
+      ${hasPlan?'<div class="leg"><div class="ldot" style="background:#aaa"></div>Plan</div>':''}
+    </div>
+    <div style="position:relative;height:195px"><canvas id="c-monthly"></canvas></div>
+  </div>
+  <div class="card">
+    <div class="c-title">Regions — aktyvumas (sau+vas)</div>
+    <div class="c-sub">${hasPlan?'Percentage of plan · 100% line = plan':'Absoliutus completed skaičius'}</div>
+    <div style="position:relative;height:220px"><canvas id="c-reg"></canvas></div>
+  </div>
+</div>
+
+<div class="sec-label">Weekly Activity</div>
+<div class="hm-card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+    <div><div class="c-title">Branches × weeks (W02–W13)</div><div class="c-sub" style="margin:0">W11 = current (Mar 9–15)</div></div>
+    <div class="legend">
+      <div class="leg"><div class="ldot iv3"></div>Completed</div>
+      <div class="leg"><div class="ldot su2"></div>Planned</div>
+      <div class="leg"><div class="ldot ne-c"></div>Cancelled</div>
+    </div>
+  </div>
+  <table class="hm" id="hm-table"></table>
+  <div class="note-bar">Pilkas = 0 renginių · Tamsiau žalia = daugiau completed · Blue = planned ahead</div>
+</div>
+
+<div class="sec-label">Regions</div>
+<div class="t-card">
+  <div class="t-header"><div><div class="c-title">Regions — detalė</div><div class="c-sub" style="margin:0">${hasPlan?'Plan exec. = Jan+Feb ÷ plan×2 · Forecast = (Jan+Feb+Mar✓+Mar📅) ÷ plan×3':'Faktiniai skaičiai · no plan set for this module'}</div></div></div>
+  <table class="dt" id="reg-table"></table>
+</div>
+
+<div class="sec-label">Branches</div>
+<div class="t-card">
+  <div class="t-header">
+    <div><div class="c-title">Branches — detalė</div></div>
+    <div class="tabs" id="sky-tabs-${key}">
+      <button class="tab act" onclick="filterSky('${key}','visi',this)">All</button>
+      <button class="tab" data-reg="East" onclick="filterSky('${key}','East',this)">East</button>
+      <button class="tab" data-reg="South" onclick="filterSky('${key}','South',this)">South</button>
+      <button class="tab" data-reg="West" onclick="filterSky('${key}','West',this)">West</button>
+      <button class="tab" data-reg="North" onclick="filterSky('${key}','North',this)">North</button>
+    </div>
+  </div>
+  <table class="dt">
+    <thead><tr>
+      <th>Branch</th><th>Reg.</th>${hasPlan?'<th>Plan/month</th>':''}
+      <th>Jan ✓</th><th>Feb ✓</th><th>Mar ✓</th><th>Mar 📅</th>
+      ${hasPlan?'<th>Plan exec.</th><th>Forecast</th>':''}
+      <th>Coord.</th>
+    </tr></thead>
+    <tbody id="sky-tbody-${key}"></tbody>
+  </table>
+  <div class="note-bar">✓ = completed | 📅 = planned</div>
+</div>
+
+<div class="sec-label">Coordinators</div>
+<div class="t-card" id="coord-section-${key}">
+  <div class="t-header">
+    <div><div class="c-title">Coordinators — aktyvumas (sau+vas+kov)</div><div class="c-sub" style="margin:0">Sorted by highest number of completed events</div></div>
+    <div class="tabs" id="coord-tabs-${key}">
+      <button class="tab act" onclick="filterCoord('${key}','visi',this)">All</button>
+      <button class="tab" data-reg="East" onclick="filterCoord('${key}','East',this)">East</button>
+      <button class="tab" data-reg="South" onclick="filterCoord('${key}','South',this)">South</button>
+      <button class="tab" data-reg="West" onclick="filterCoord('${key}','West',this)">West</button>
+      <button class="tab" data-reg="North" onclick="filterCoord('${key}','North',this)">North</button>
+    </div>
+  </div>
+  <table class="dt">
+    <thead><tr><th>#</th><th>Coordinator</th><th>Branch</th><th>Region</th><th>Completed ✓</th><th>Planned 📅</th><th>Cancelled ✗</th></tr></thead>
+    <tbody id="coord-tbody-${key}"></tbody>
+    <tfoot id="coord-tfoot-${key}"></tfoot>
+  </table>
+</div>
+
+<div class="sec-label">Coordinators Weekly Activity</div>
+<div class="hm-card">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+    <div><div class="c-title">Coordinators × weeks</div><div class="c-sub" style="margin:0">W11 = current (Mar 9–15) · Blue = planned ahead</div></div>
+    <div class="legend">
+      <div class="leg"><div class="ldot iv3"></div>Completed</div>
+      <div class="leg"><div class="ldot su2"></div>Planned</div>
+      <div class="leg"><div class="ldot ne-c"></div>Cancelled</div>
+    </div>
+  </div>
+  <table class="hm" id="coord-hm-table"></table>
+  <div class="note-bar">Grey = 0 events · Green = completed · Blue = planned</div>
+</div>`;
+
+  document.getElementById('main-content').innerHTML = html;
+
+  // Charts
+  const gOpts = {responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',borderColor:'rgba(0,0,0,.1)',borderWidth:1,titleColor:'#1A1C24',bodyColor:'#52566A'}},scales:{x:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}},y:{grid:{color:'rgba(0,0,0,.05)'},ticks:{font:{size:11}}}}};
+
+  // Monthly chart
+  const datasets = [
+    {label:'Completed',   data:[men.January.iv,men.February.iv,men.March.iv],  backgroundColor:'rgba(31,122,60,.75)',stack:'s'},
+    {label:'Cancelled', data:[men.January.ne||0,men.February.ne||0,men.March.ne||0], backgroundColor:'rgba(200,16,46,.75)',stack:'s'},
+    {label:'Planned',data:[0,0,kovSu], backgroundColor:'rgba(26,95,173,.55)',stack:'s'}
+  ];
+  if(hasPlan) datasets.push({label:'Plan',data:[m.planMen,m.planMen,m.planMen],type:'line',borderColor:'rgba(0,0,0,.2)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,order:-1});
+  mkChart('c-monthly',{type:'bar',data:{labels:['January','February','March'],datasets},options:{...gOpts,scales:{...gOpts.scales,x:{...gOpts.scales.x,stacked:true},y:{...gOpts.scales.y,stacked:true,max:hasPlan?Math.max(m.planMen*1.15,men.February.iv*1.2):undefined}}}});
+
+  // Region chart
+  const regIv = REG.map(r=>(m.regData[r]?.sau||0)+(m.regData[r]?.vas||0));
+  if(hasPlan){
+    const regPct = REG.map(r=>Math.round(((m.regData[r]?.sau||0)+(m.regData[r]?.vas||0))/(m.regPlan[r]*2)*100));
+    mkChart('c-reg',{type:'bar',data:{labels:REG,datasets:[
+      {data:regPct,backgroundColor:REG.map(r=>REG_COLOR[r]+'aa'),borderColor:REG.map(r=>REG_COLOR[r]),borderWidth:1,borderRadius:4},
+      {data:[100,100,100,100],type:'line',borderColor:'rgba(0,0,0,.2)',borderWidth:1.5,borderDash:[4,3],pointRadius:0,fill:false,order:-1}
+    ]},options:{...gOpts,scales:{x:{...gOpts.scales.x},y:{...gOpts.scales.y,max:65,ticks:{...gOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
+  } else {
+    mkChart('c-reg',{type:'bar',data:{labels:REG,datasets:[
+      {data:regIv,backgroundColor:REG.map(r=>REG_COLOR[r]+'aa'),borderColor:REG.map(r=>REG_COLOR[r]),borderWidth:1,borderRadius:4}
+    ]},options:{...gOpts}});
+  }
+
+  // Heatmap
+  const MW = m.weeks || WEEKS;
+  const hdr='<thead><tr><th class="sky-th">Branch</th>'+
+    MW.map(w=>`<th class="${w===NOW_W?'now-th':''}" style="${w===NOW_W?'border-left:2px solid rgba(200,16,46,.3)':''}">${WK_LBL[w]||w}</th>`).join('')+
+    '</tr></thead>';
+  // Group branch by region order
+  const REG_ORDER = ['East','South','West','North'];
+  const REG_BG = {'East':'rgba(200,16,46,.12)','South':'rgba(26,107,52,.12)','West':'rgba(158,90,0,.12)','North':'rgba(21,80,160,.12)'};
+  const REG_FG = {'East':'#a0102a','South':'#1a6b34','West':'#9e5a00','North':'#1550a0'};
+  let bodyRows = '';
+  REG_ORDER.forEach((reg, ri) => {
+    const skyInReg = Object.keys(m.hmData).filter(s => (SKY_REG[s]||'') === reg);
+    if(!skyInReg.length) return;
+    // One separator row with region badge (only first column, rest empty)
+    const sepPad = ri===0 ? '4px 0 2px' : '10px 0 2px';
+    bodyRows += `<tr class="hm-reg-row"><td style="padding:${sepPad}"><span class="hm-reg-hdr" style="background:${REG_BG[reg]};color:${REG_FG[reg]}">${reg}</span></td>${MW.map(w=>`<td class="${w===NOW_W?'now-col':''}"></td>`).join('')}</tr>`;
+    skyInReg.forEach(s => {
+      bodyRows += `<tr>
+        <td style="font-weight:500;padding:4px 12px 4px 12px;white-space:nowrap;color:var(--text)">${s}</td>
+        ${MW.map(w=>`<td class="${w===NOW_W?'now-col':''}">${hmCell(m.hmData[s][w]||{iv:0,ne:0,su:0},w)}</td>`).join('')}
+      </tr>`;
+    });
+  });
+  const body='<tbody>'+bodyRows+'</tbody>';
+  document.getElementById('hm-table').innerHTML = hdr+body;
+
+  // Region table
+  document.getElementById('reg-table').innerHTML = `<thead><tr>
+    <th>Region</th><th>Jan ✓</th><th>Feb ✓</th><th>Mar ✓</th><th>Mar 📅</th>
+    ${hasPlan?'<th>Plan/month</th><th>Plan exec. (Jan+Feb)</th><th>Forecast (Jan–Mar)</th>':'<th>Sau+vas viso</th>'}
+  </tr></thead><tbody>${REG.map(r=>{
+    const rd=m.regData[r]||{sau:0,vas:0,kovIv:0,kovSu:0};
+    const sv=rd.sau+rd.vas;
+    const p=hasPlan?m.regPlan[r]:null;
+    const pct2=hasPlan?Math.round(sv/(p*2)*100):null;
+    const pct3=hasPlan?Math.round((sv+rd.kovIv+rd.kovSu)/(p*3)*100):null;
+    return `<tr>
+      <td><span class="badge ${REG_BADGE[r]}">${r}</span></td>
+      <td class="g">${rd.sau}</td><td class="g">${rd.vas}</td>
+      <td style="color:${rd.kovIv>0?'#1a6630':'var(--text3)'};font-family:var(--mono)">${d0(rd.kovIv)}</td>
+      <td class="b">${d0(rd.kovSu)}</td>
+      ${hasPlan?`<td class="d">${p}</td><td>${progBar(pct2)}</td><td>${progBar(pct3)}</td>`:`<td class="g" style="font-weight:600">${sv}</td>`}
+    </tr>`;
+  }).join('')}</tbody>`;
+
+  filterSky(key,'visi',null);
+  filterCoord(key,'visi',null);
+  renderCoordHeatmap(key);
+}
+
+function filterSky(key, reg, btn){
+  if(btn){ document.querySelectorAll(`#sky-tabs-${key} .tab`).forEach(b=>b.classList.remove('act')); btn.classList.add('act'); }
+  const m=MODULES[key], hasPlan=m.planMen!==null;
+  const rows=Object.entries(m.skyData).filter(([,v])=>reg==='visi'||v.reg===reg).sort((a,b)=>(b[1].sau+b[1].vas)-(a[1].sau+a[1].vas));
+  document.getElementById(`sky-tbody-${key}`).innerHTML=rows.map(([name,v])=>{
+    const sv=v.sau+v.vas;
+    const pct2=hasPlan&&v.plan?Math.round(sv/(v.plan*2)*100):null;
+    const pct3=hasPlan&&v.plan?Math.round((sv+v.kovIv+v.kovSu)/(v.plan*3)*100):null;
+    return `<tr>
+      <td style="font-weight:500">${name}</td>
+      <td><span class="badge ${REG_BADGE[v.reg]}">${v.reg}</span></td>
+      ${hasPlan?`<td class="d">${v.plan||'—'}</td>`:''}
+      <td class="g">${v.sau}</td><td class="g">${v.vas}</td>
+      <td style="color:${v.kovIv>0?'#1a6630':'var(--text3)'};font-family:var(--mono)">${d0(v.kovIv)}</td>
+      <td class="b">${d0(v.kovSu)}</td>
+      ${hasPlan?`<td>${progBar(pct2)}</td><td>${progBar(pct3)}</td>`:''}
+      <td class="d">${v.coords||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function filterCoord(key, reg, btn){
+  if(btn){ document.querySelectorAll(`#coord-tabs-${key} .tab`).forEach(b=>b.classList.remove('act')); btn.classList.add('act'); }
+  const filtered=MODULES[key].coordData.filter(c=>reg==='visi'||c.reg===reg);
+  document.getElementById(`coord-tbody-${key}`).innerHTML=filtered.map((c,i)=>`<tr>
+    <td class="rank">${i+1}</td>
+    <td style="font-weight:500">${c.name}</td>
+    <td style="color:var(--text2)">${c.sky}</td>
+    <td><span class="badge ${REG_BADGE[c.reg]}">${c.reg}</span></td>
+    <td class="g">${c.iv}</td>
+    <td class="b">${d0(c.su)}</td>
+    <td style="color:${c.ne>0?'#A32D2D':'var(--text3)'};font-family:var(--mono)">${d0(c.ne)}</td>
+  </tr>`).join('');
+  const tIv=filtered.reduce((a,c)=>a+c.iv,0), tSu=filtered.reduce((a,c)=>a+c.su,0), tNe=filtered.reduce((a,c)=>a+c.ne,0);
+  document.getElementById(`coord-tfoot-${key}`).innerHTML=`<tr><td colspan="4">Total</td><td class="g">${tIv}</td><td class="b">${d0(tSu)}</td><td style="color:${tNe>0?'#A32D2D':'var(--text3)'};font-family:var(--mono)">${d0(tNe)}</td></tr>`;
+}
+
+
+function renderCoordHeatmap(key){
+  const m = MODULES[key];
+  const MW = m.weeks || WEEKS;
+  const cwd = m.coordWeekData || {};
+  if(!cwd || !Object.keys(cwd).length){ 
+    const el = document.getElementById('coord-hm-table');
+    if(el) el.innerHTML='<tr><td style="color:var(--text3);padding:12px">Nėra duomenų</td></tr>';
+    return;
+  }
+  const REG_ORDER = ['East','South','West','North'];
+  const REG_BG = {'East':'rgba(200,16,46,.12)','South':'rgba(26,107,52,.12)','West':'rgba(158,90,0,.12)','North':'rgba(21,80,160,.12)'};
+  const REG_FG = {'East':'#a0102a','South':'#1a6b34','West':'#9e5a00','North':'#1550a0'};
+  
+  const hdr='<thead><tr><th class="sky-th" style="min-width:160px">Coordinator</th>'+
+    MW.map(w=>`<th class="${w===NOW_W?'now-th':''}" style="${w===NOW_W?'border-left:2px solid rgba(200,16,46,.3)':''}">${WK_LBL[w]||w}</th>`).join('')+
+    '</tr></thead>';
+  
+  let bodyRows = '';
+  REG_ORDER.forEach((reg, ri) => {
+    const coordsInReg = Object.entries(cwd).filter(([,v])=>v.reg===reg).sort((a,b)=>{
+      const aTotal = Object.values(a[1].weeks).reduce((s,d)=>s+d.iv,0);
+      const bTotal = Object.values(b[1].weeks).reduce((s,d)=>s+d.iv,0);
+      return bTotal - aTotal;
+    });
+    if(!coordsInReg.length) return;
+    const sepPad = ri===0 ? '4px 0 2px' : '10px 0 2px';
+    bodyRows += `<tr class="hm-reg-row"><td style="padding:${sepPad}"><span class="hm-reg-hdr" style="background:${REG_BG[reg]};color:${REG_FG[reg]}">${reg}</span></td>${MW.map(w=>`<td class="${w===NOW_W?'now-col':''}"></td>`).join('')}</tr>`;
+    coordsInReg.forEach(([name, v]) => {
+      bodyRows += `<tr>
+        <td style="font-weight:500;padding:4px 12px 4px 12px;white-space:nowrap;color:var(--text)">${name}</td>
+        ${MW.map(w=>`<td class="${w===NOW_W?'now-col':''}">${hmCell(v.weeks[w]||{iv:0,ne:0,su:0},w)}</td>`).join('')}
+      </tr>`;
+    });
+  });
+  
+  const el = document.getElementById('coord-hm-table');
+  if(el) el.innerHTML = hdr + '<tbody>' + bodyRows + '</tbody>';
+}
+
+function renderPlanai(){
+  clearCharts();
+  const REG_ORDER = ['East','South','West','North'];
+  const REG_BG = {'East':'rgba(200,16,46,.12)','South':'rgba(26,107,52,.12)','West':'rgba(158,90,0,.12)','North':'rgba(21,80,160,.12)'};
+  const REG_FG = {'East':'#a0102a','South':'#1a6b34','West':'#9e5a00','North':'#1550a0'};
+  const planData = [{"reg": "East", "sky": "Vilnius branch", "coord": "Anželika B.", "cs_d": 2700, "cs_m": 90, "ppb_d": 600, "ppb_m": 30, "ppp_d": 120, "ppp_m": 6}, {"reg": "East", "sky": "Vilnius branch", "coord": "Zita M.", "cs_d": 2700, "cs_m": 90, "ppb_d": 600, "ppb_m": 30, "ppp_d": 120, "ppp_m": 6}, {"reg": "East", "sky": "Vilnius branch", "coord": "Urtė V.", "cs_d": 2700, "cs_m": 90, "ppb_d": 600, "ppb_m": 30, "ppp_d": 120, "ppp_m": 6}, {"reg": "East", "sky": "Ukmergė branch", "coord": "Jolita C.", "cs_d": 500, "cs_m": 17, "ppb_d": 150, "ppb_m": 8, "ppp_d": 45, "ppp_m": 3}, {"reg": "East", "sky": "Elektrėnai branch", "coord": "Rasa K.", "cs_d": 500, "cs_m": 17, "ppb_d": 150, "ppb_m": 8, "ppp_d": 45, "ppp_m": 3}, {"reg": "West", "sky": "Klaipėda branch", "coord": "Robertas V.", "cs_d": 2180, "cs_m": 73, "ppb_d": 510, "ppb_m": 26, "ppp_d": 110, "ppp_m": 6}, {"reg": "West", "sky": "Klaipėda branch", "coord": "Irina L.", "cs_d": 2180, "cs_m": 73, "ppb_d": 510, "ppb_m": 26, "ppp_d": 110, "ppp_m": 6}, {"reg": "West", "sky": "Tauragė branch", "coord": "Jolita Z.", "cs_d": 1640, "cs_m": 55, "ppb_d": 380, "ppb_m": 19, "ppp_d": 80, "ppp_m": 4}, {"reg": "North", "sky": "Panevėžys branch", "coord": "Ingrida T.", "cs_d": 1350, "cs_m": 45, "ppb_d": 292, "ppb_m": 15, "ppp_d": 0, "ppp_m": 0}, {"reg": "North", "sky": "Panevėžys branch", "coord": "Agnė T.", "cs_d": 1350, "cs_m": 45, "ppb_d": 292, "ppb_m": 15, "ppp_d": 0, "ppp_m": 0}, {"reg": "North", "sky": "Utena branch", "coord": "Edita V.", "cs_d": 1350, "cs_m": 45, "ppb_d": 292, "ppb_m": 15, "ppp_d": 0, "ppp_m": 0}, {"reg": "North", "sky": "Šiauliai branch", "coord": "Silvestras P.", "cs_d": 750, "cs_m": 25, "ppb_d": 290, "ppb_m": 15, "ppp_d": 190, "ppp_m": 10}, {"reg": "North", "sky": "Šiauliai branch", "coord": "Valda P.", "cs_d": 1350, "cs_m": 45, "ppb_d": 292, "ppb_m": 15, "ppp_d": 0, "ppp_m": 0}, {"reg": "North", "sky": "Šiauliai branch", "coord": "Grėta V.", "cs_d": 1350, "cs_m": 45, "ppb_d": 292, "ppb_m": 15, "ppp_d": 185, "ppp_m": 10}, {"reg": "South", "sky": "Kaunas branch", "coord": "Gabrielė V.", "cs_d": 0, "cs_m": 0, "ppb_d": 900, "ppb_m": 45, "ppp_d": 375, "ppp_m": 19}, {"reg": "South", "sky": "Kaunas branch", "coord": "Karolis J.", "cs_d": 2600, "cs_m": 87, "ppb_d": 0, "ppb_m": 0, "ppp_d": 0, "ppp_m": 0}, {"reg": "South", "sky": "Kaunas branch", "coord": "Roberta V.", "cs_d": 1100, "cs_m": 37, "ppb_d": 0, "ppb_m": 0, "ppp_d": 0, "ppp_m": 0}, {"reg": "South", "sky": "Vilkaviškis branch", "coord": "Lina F.", "cs_d": 1100, "cs_m": 37, "ppb_d": 150, "ppb_m": 8, "ppp_d": 0, "ppp_m": 0}, {"reg": "South", "sky": "Raseiniai branch", "coord": "Alma K.", "cs_d": 200, "cs_m": 7, "ppb_d": 0, "ppb_m": 0, "ppp_d": 0, "ppp_m": 0}, {"reg": "South", "sky": "Alytus branch", "coord": "Ugnė S.", "cs_d": 1250, "cs_m": 42, "ppb_d": 350, "ppb_m": 18, "ppp_d": 0, "ppp_m": 0}, {"reg": "South", "sky": "Alytus branch", "coord": "Edita K.", "cs_d": 1250, "cs_m": 42, "ppb_d": 350, "ppb_m": 18, "ppp_d": 0, "ppp_m": 0}];
+
+  // Reg totals
+  const regTotals = {};
+  REG_ORDER.forEach(r=>regTotals[r]={cs_d:0,cs_m:0,ppb_d:0,ppb_m:0,ppp_d:0,ppp_m:0});
+  planData.forEach(d=>{
+    regTotals[d.reg].cs_d+=d.cs_d; regTotals[d.reg].cs_m+=d.cs_m;
+    regTotals[d.reg].ppb_d+=d.ppb_d; regTotals[d.reg].ppb_m+=d.ppb_m;
+    regTotals[d.reg].ppp_d+=d.ppp_d; regTotals[d.reg].ppp_m+=d.ppp_m;
+  });
+  const totAll={cs_d:0,cs_m:0,ppb_d:0,ppb_m:0,ppp_d:0,ppp_m:0};
+  Object.values(regTotals).forEach(r=>{Object.keys(totAll).forEach(k=>totAll[k]+=r[k])});
+
+  function pv(v, cls='plan-val'){return v>0?`<span class="${cls}">${v}</span>`:'<span class="plan-zero">—</span>'}
+
+  // Build HTML
+  let html = `
+<div class="sec-label">Training Plans — Q1 2026</div>
+<div class="card" style="margin-bottom:12px">
+  <div class="c-title">Coordinators — training plan (Q1 2026, total per quarter)</div>
+  <div class="c-sub">Participant targets from Excel · Sessions = ⌈participants ÷ norm⌉ · CS: 30 par./session · PPB & PPP: 20 par./session</div>
+  <div style="display:flex;gap:16px;margin-bottom:14px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span style="width:28px;height:12px;background:rgba(31,122,60,.2);border-radius:3px;display:inline-block"></span>CS block</div>
+    <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span style="width:28px;height:12px;background:rgba(21,80,160,.15);border-radius:3px;display:inline-block"></span>PPB block</div>
+    <div style="display:flex;align-items:center;gap:7px;font-size:12px"><span style="width:28px;height:12px;background:rgba(127,119,221,.15);border-radius:3px;display:inline-block"></span>PPP block</div>
+    <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#1550a0"><strong>Skait.</strong> = participants</div>
+    <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:#1a6630"><strong>Skait.</strong> = sessions</div>
+  </div>
+  <table class="dt">
+    <thead>
+      <tr>
+        <th rowspan="2" style="vertical-align:bottom">Coordinator</th>
+        <th rowspan="2" style="vertical-align:bottom">Region</th>
+        <th rowspan="2" style="vertical-align:bottom">Branch</th>
+        <th colspan="2" class="plan-hdr-cs" style="text-align:center;border-bottom:2px solid rgba(31,122,60,.3)">CS</th>
+        <th colspan="2" class="plan-hdr-ppb" style="text-align:center;border-bottom:2px solid rgba(21,80,160,.3)">PPB</th>
+        <th colspan="2" class="plan-hdr-ppp" style="text-align:center;border-bottom:2px solid rgba(127,119,221,.4)">PPP</th>
+        <th rowspan="2" style="vertical-align:bottom;text-align:center">Total<br>sessions</th>
+      </tr>
+      <tr>
+        <th class="plan-hdr-cs" style="text-align:center">Participants</th>
+        <th class="plan-hdr-cs" style="text-align:center">Sessions</th>
+        <th class="plan-hdr-ppb" style="text-align:center">Participants</th>
+        <th class="plan-hdr-ppb" style="text-align:center">Sessions</th>
+        <th class="plan-hdr-ppp" style="text-align:center">Participants</th>
+        <th class="plan-hdr-ppp" style="text-align:center">Sessions</th>
+      </tr>
+    </thead>
+    <tbody>`;
+
+  let prevReg = null;
+  REG_ORDER.forEach(reg => {
+    const rows = planData.filter(d=>d.reg===reg);
+    if(!rows.length) return;
+    // Region group header
+    html += `<tr><td colspan="10" style="padding:10px 12px 3px"><span class="hm-reg-hdr" style="background:${REG_BG[reg]};color:${REG_FG[reg]}">${reg} region</span></td></tr>`;
+    // Sky subtotals per region
+    const skies = [...new Set(rows.map(r=>r.sky))];
+    skies.forEach(sky => {
+      const skyRows = rows.filter(r=>r.sky===sky);
+      // Individual coordinator rows
+      skyRows.forEach((d,i) => {
+        const tot = d.cs_m+d.ppb_m+d.ppp_m;
+        html += `<tr>
+          <td style="font-weight:500;padding-left:20px">${d.coord}</td>
+          <td><span class="badge ${REG_BADGE[d.reg]}">${d.reg}</span></td>
+          <td style="color:var(--text2)">${d.sky}</td>
+          <td class="plan-hdr-cs" style="text-align:center">${pv(d.cs_d,'plan-val plan-dal')}</td>
+          <td class="plan-hdr-cs" style="text-align:center">${pv(d.cs_m,'plan-val plan-mok')}</td>
+          <td class="plan-hdr-ppb" style="text-align:center">${pv(d.ppb_d,'plan-val plan-dal')}</td>
+          <td class="plan-hdr-ppb" style="text-align:center">${pv(d.ppb_m,'plan-val plan-mok')}</td>
+          <td class="plan-hdr-ppp" style="text-align:center">${pv(d.ppp_d,'plan-val plan-dal')}</td>
+          <td class="plan-hdr-ppp" style="text-align:center">${pv(d.ppp_m,'plan-val plan-mok')}</td>
+          <td style="text-align:center;font-weight:600;font-family:var(--mono)">${tot||'—'}</td>
+        </tr>`;
+      });
+    });
+    // Region subtotal
+    const rt = regTotals[reg];
+    html += `<tr style="background:rgba(0,0,0,.03)">
+      <td colspan="3" style="font-weight:600;padding-left:12px">Total — ${reg} region</td>
+      <td class="plan-hdr-cs" style="text-align:center;font-weight:600;font-family:var(--mono);color:#1550a0">${rt.cs_d}</td>
+      <td class="plan-hdr-cs" style="text-align:center;font-weight:700;font-family:var(--mono);color:#1a6630">${rt.cs_m}</td>
+      <td class="plan-hdr-ppb" style="text-align:center;font-weight:600;font-family:var(--mono);color:#1550a0">${rt.ppb_d}</td>
+      <td class="plan-hdr-ppb" style="text-align:center;font-weight:700;font-family:var(--mono);color:#1a6630">${rt.ppb_m}</td>
+      <td class="plan-hdr-ppp" style="text-align:center;font-weight:600;font-family:var(--mono);color:#1550a0">${rt.ppp_d||'—'}</td>
+      <td class="plan-hdr-ppp" style="text-align:center;font-weight:700;font-family:var(--mono);color:#1a6630">${rt.ppp_m||'—'}</td>
+      <td style="text-align:center;font-weight:700;font-family:var(--mono)">${rt.cs_m+rt.ppb_m+rt.ppp_m}</td>
+    </tr>`;
+  });
+
+  // Grand total
+  html += `</tbody><tfoot><tr>
+    <td colspan="3" style="font-weight:700;font-size:13px">TOTAL — Network (Q1)</td>
+    <td class="plan-hdr-cs" style="text-align:center;font-weight:700;font-family:var(--mono);color:#1550a0">${totAll.cs_d}</td>
+    <td class="plan-hdr-cs" style="text-align:center;font-weight:700;font-family:var(--mono);color:#1a6630">${totAll.cs_m}</td>
+    <td class="plan-hdr-ppb" style="text-align:center;font-weight:700;font-family:var(--mono);color:#1550a0">${totAll.ppb_d}</td>
+    <td class="plan-hdr-ppb" style="text-align:center;font-weight:700;font-family:var(--mono);color:#1a6630">${totAll.ppb_m}</td>
+    <td class="plan-hdr-ppp" style="text-align:center;font-weight:700;font-family:var(--mono);color:#1550a0">${totAll.ppp_d}</td>
+    <td class="plan-hdr-ppp" style="text-align:center;font-weight:700;font-family:var(--mono);color:#1a6630">${totAll.ppp_m}</td>
+    <td style="text-align:center;font-weight:700;font-family:var(--mono);font-size:13px">${totAll.cs_m+totAll.ppb_m+totAll.ppp_m}</td>
+  </tr></tfoot></table>
+  <div class="note-bar">Blue = participant target · Green = sessions target · Norm: CS 30 par./session, PPB/PPP 20 par./session · Source: Mokymų_planai_Q1_Q2.xlsx</div>
+</div>
+
+<div class="sec-label">Region level — monthly plan</div>
+<div class="t-card">
+  <div class="t-header"><div class="c-title">Regions — training plan/month (Q1 ÷ 3)</div></div>
+  <table class="dt"><thead><tr>
+    <th>Region</th>
+    <th colspan="2" class="plan-hdr-cs" style="text-align:center">CS</th>
+    <th colspan="2" class="plan-hdr-ppb" style="text-align:center">PPB</th>
+    <th colspan="2" class="plan-hdr-ppp" style="text-align:center">PPP</th>
+    <th style="text-align:center">Total/mėn.</th>
+  </tr><tr>
+    <th></th>
+    <th class="plan-hdr-cs" style="text-align:center">Participants</th><th class="plan-hdr-cs" style="text-align:center">Sessions</th>
+    <th class="plan-hdr-ppb" style="text-align:center">Participants</th><th class="plan-hdr-ppb" style="text-align:center">Sessions</th>
+    <th class="plan-hdr-ppp" style="text-align:center">Participants</th><th class="plan-hdr-ppp" style="text-align:center">Sessions</th>
+    <th></th>
+  </tr></thead><tbody>`;
+
+  const regMonthPlan = {'East':{cs_d:3033,cs_m:102,ppb_d:700,ppb_m:35,ppp_d:150,ppp_m:8},'South':{cs_d:2500,cs_m:84,ppb_d:583,ppb_m:30,ppp_d:125,ppp_m:7},'West':{cs_d:2000,cs_m:67,ppb_d:466,ppb_m:24,ppp_d:100,ppp_m:5},'North':{cs_d:2500,cs_m:84,ppb_d:583,ppb_m:30,ppp_d:125,ppp_m:7}};
+  REG_ORDER.forEach(reg=>{
+    const p=regMonthPlan[reg];
+    html+=`<tr>
+      <td><span class="badge ${REG_BADGE[reg]}">${reg}</span></td>
+      <td class="plan-hdr-cs" style="text-align:center;color:#1550a0;font-family:var(--mono)">${p.cs_d}</td>
+      <td class="plan-hdr-cs" style="text-align:center;font-weight:700;color:#1a6630;font-family:var(--mono)">${p.cs_m}</td>
+      <td class="plan-hdr-ppb" style="text-align:center;color:#1550a0;font-family:var(--mono)">${p.ppb_d}</td>
+      <td class="plan-hdr-ppb" style="text-align:center;font-weight:700;color:#1a6630;font-family:var(--mono)">${p.ppb_m}</td>
+      <td class="plan-hdr-ppp" style="text-align:center;color:#1550a0;font-family:var(--mono)">${p.ppp_d}</td>
+      <td class="plan-hdr-ppp" style="text-align:center;font-weight:700;color:#1a6630;font-family:var(--mono)">${p.ppp_m}</td>
+      <td style="text-align:center;font-weight:600;font-family:var(--mono)">${p.cs_m+p.ppb_m+p.ppp_m}</td>
+    </tr>`;
+  });
+  html+=`</tbody><tfoot><tr>
+    <td style="font-weight:700">VISO</td>
+    <td class="plan-hdr-cs" style="text-align:center;color:#1550a0;font-family:var(--mono);font-weight:700">30100</td>
+    <td class="plan-hdr-cs" style="text-align:center;color:#1a6630;font-family:var(--mono);font-weight:700">502</td>
+    <td class="plan-hdr-ppb" style="text-align:center;color:#1550a0;font-family:var(--mono);font-weight:700">7000</td>
+    <td class="plan-hdr-ppb" style="text-align:center;color:#1a6630;font-family:var(--mono);font-weight:700">196</td>
+    <td class="plan-hdr-ppp" style="text-align:center;color:#1550a0;font-family:var(--mono);font-weight:700">1500</td>
+    <td class="plan-hdr-ppp" style="text-align:center;color:#1a6630;font-family:var(--mono);font-weight:700">44</td>
+    <td style="text-align:center;font-weight:700;font-family:var(--mono)">1429</td>
+  </tr></tfoot></table>
+</div>`;
+
+  document.getElementById('main-content').innerHTML = html;
+}
+
+function switchModule(key, btn){
+  document.querySelectorAll('.mtab').forEach(b=>b.classList.remove('act')); btn.classList.add('act');
+  if(key==='PLANAI') renderPlanai();
+  else renderModule(key);
+}
+
+// Init
+renderModule('CS');
+</script>
+</body>
+</html>
