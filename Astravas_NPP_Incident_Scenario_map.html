@@ -162,6 +162,16 @@ header p  { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
       </div>
     </div>
 
+    <!-- ASSEMBLY POINTS -->
+    <div class="panel-section">
+      <div class="sec-title">Assembly Points (pre-evacuation)</div>
+      <div style="font-size:11px;color:#37474F;line-height:1.6">
+        Organised in <b>Vilnius</b> and <b>Švenčionys districts</b>.<br>
+        Residents self-arrive or are transported here → registered → sent to reception towns.<br>
+        <span style="color:#E67E22">⚠ Decontamination screening before transfer if radiation detected.</span>
+      </div>
+    </div>
+
     <!-- ACTIVATION STAGES -->
     <div class="panel-section">
       <div class="sec-title">LRC Activation Stages</div>
@@ -173,7 +183,7 @@ header p  { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 2px; }
     <!-- IM RULE -->
     <div class="panel-section">
       <div class="im-rule">
-        <span>IM Rule:</span> Systems must also capture the <b>25% who bypass checkpoints</b> — retroactively.
+        <span>IM Rule:</span> Assembly points capture <b>organised 75%</b>. Systems must also capture the <b>spontaneous 25%</b> who bypass — retroactively. Personal data may be incomplete post-decontamination (items retained).
       </div>
     </div>
 
@@ -335,24 +345,45 @@ L.polyline([[54.756,26.085],[54.5,25.0],[54.412,23.183]], {
   color: '#3498DB', weight: 1.5, opacity: 0.35, dashArray: '6 6'
 }).addTo(map);
 
-// ── Checkpoint locations (approx LT border crossings relevant) ─────────────
-var checkpoints = [
-  { name: 'Medininkai crossing', lat: 54.613, lng: 25.740 },
-  { name: 'Šalčininkai area',    lat: 54.309, lng: 25.387 },
+// ── Assembly points (Vilnius & Švenčionys districts) ──────────────────────
+var assemblyPoints = [
+  { name: 'Švenčionys assembly point', lat: 55.074, lng: 26.159, note: 'Vilnius district — organised transport departs here' },
+  { name: 'Šalčininkai assembly point', lat: 54.309, lng: 25.387, note: 'Vilnius district — border area collection point' },
+  { name: 'Vilnius district assembly point', lat: 54.620, lng: 25.600, note: 'Eastern Vilnius district — residents self-report here' },
 ];
 
-var cpIcon = L.divIcon({
+var apIcon = L.divIcon({
   className: '',
-  html: '<div style="width:12px;height:12px;background:#F39C12;border:2px solid white;border-radius:2px;box-shadow:0 1px 3px rgba(0,0,0,0.4)"></div>',
-  iconSize: [12,12], iconAnchor: [6,6], popupAnchor: [0,-6]
+  html: '<div style="width:14px;height:14px;background:#8E44AD;border:2px solid white;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,0.4)">A</div>',
+  iconSize: [14,14], iconAnchor: [7,7], popupAnchor: [0,-7]
 });
 
-checkpoints.forEach(function(c) {
-  L.marker([c.lat, c.lng], { icon: cpIcon }).addTo(map)
+assemblyPoints.forEach(function(c) {
+  L.marker([c.lat, c.lng], { icon: apIcon }).addTo(map)
     .bindPopup('<div class="lrk-popup"><div class="pp-title">'+c.name+'</div>'
-      +'<div class="pp-line">Registration checkpoint</div>'
-      +'<div class="pp-line" style="color:#E67E22">25% may bypass → capture retroactively</div>'
-      +'<span class="pp-badge" style="background:#E67E22">Checkpoint</span></div>');
+      +'<div class="pp-line">'+c.note+'</div>'
+      +'<div class="pp-line" style="color:#8E44AD;margin-top:4px">LRC role: Registration · Vulnerable ID · Info</div>'
+      +'<span class="pp-badge" style="background:#8E44AD">Assembly point</span></div>');
+});
+
+// ── Decontamination / radiological control points ─────────────────────────
+var deconPoints = [
+  { name: 'Decontamination point — Švenčionys', lat: 55.074, lng: 25.900, note: 'Radiological screening before transfer to reception towns. Personal items may be retained if contaminated.' },
+  { name: 'Decontamination point — Vilnius east', lat: 54.720, lng: 25.580, note: 'Radiological screening for self-evacuees entering Vilnius region. Decontamination if needed.' },
+];
+
+var deconIcon = L.divIcon({
+  className: '',
+  html: '<div style="width:14px;height:14px;background:#E67E22;border:2px solid white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;color:white;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,0.4)">D</div>',
+  iconSize: [14,14], iconAnchor: [7,7], popupAnchor: [0,-7]
+});
+
+deconPoints.forEach(function(c) {
+  L.marker([c.lat, c.lng], { icon: deconIcon }).addTo(map)
+    .bindPopup('<div class="lrk-popup"><div class="pp-title">'+c.name+'</div>'
+      +'<div class="pp-line">'+c.note+'</div>'
+      +'<div class="pp-line" style="color:#E67E22;margin-top:4px">⚠ Bottleneck risk — queue management critical</div>'
+      +'<span class="pp-badge" style="background:#E67E22">Decontamination</span></div>');
 });
 
 // ── Legend overlay ─────────────────────────────────────────────────────────
@@ -367,7 +398,8 @@ legend.onAdd = function() {
     +'<div><span style="display:inline-block;width:12px;height:12px;background:#E67E22;border-radius:50%;opacity:0.4;vertical-align:middle;margin-right:5px"></span>100 km shelter zone</div>'
     +'<div><span style="display:inline-block;width:10px;height:10px;background:#2C3E50;border:2px solid #E74C3C;border-radius:2px;vertical-align:middle;margin-right:5px"></span>LRC HQ (Vilnius)</div>'
     +'<div><span style="display:inline-block;width:10px;height:10px;background:#3498DB;border-radius:50%;vertical-align:middle;margin-right:5px"></span>Reception towns</div>'
-    +'<div><span style="display:inline-block;width:10px;height:10px;background:#F39C12;border-radius:2px;vertical-align:middle;margin-right:5px"></span>Checkpoints</div>'
+    +'<div><span style="display:inline-block;width:10px;height:10px;background:#8E44AD;border-radius:2px;vertical-align:middle;margin-right:5px"></span>Assembly points</div>'
+    +'<div><span style="display:inline-block;width:10px;height:10px;background:#E67E22;border-radius:50%;vertical-align:middle;margin-right:5px"></span>Decontamination pts</div>'
     +'<div style="color:#3498DB">--- Evacuation routes</div>';
   return div;
 };
