@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8">
+<title>LRK Savanorių veiklos žemėlapis</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #F4F6F8; color: #2C3E50; height: 100vh; display: flex; flex-direction: column; }
+
+header { background: #2C3E50; color: white; padding: 0.65rem 1.4rem; display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+.logo { background: #C0392B; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+header h1 { font-size: 14px; font-weight: 600; }
+header p  { font-size: 11px; opacity: 0.55; }
+.hdr-meta { margin-left: auto; font-size: 11px; opacity: 0.6; text-align: right; line-height: 1.5; }
+
+.content { flex: 1; display: flex; overflow: hidden; }
+#map-panel { flex: 1; position: relative; }
+#map { width: 100%; height: 100%; }
+
+/* Summary pill */
+.map-summary { position: absolute; top: 12px; right: 12px; z-index: 1000; background: white; border-radius: 10px; padding: 10px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); font-size: 12px; min-width: 160px; }
+.sum-title { font-size: 10px; text-transform: uppercase; color: #90A4AE; letter-spacing: .06em; margin-bottom: 6px; font-weight: 600; }
+.sum-row { display: flex; justify-content: space-between; padding: 2px 0; border-bottom: 0.5px solid #F0F2F4; }
+.sum-row:last-child { border-bottom: none; font-weight: 700; }
+.sum-val { font-weight: 600; }
+
+/* Legend circles */
+.legend-box { position: absolute; bottom: 24px; left: 12px; z-index: 1000; background: white; border-radius: 10px; padding: 10px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); font-size: 11px; }
+.leg-title { font-size: 10px; text-transform: uppercase; color: #90A4AE; letter-spacing: .06em; margin-bottom: 6px; font-weight: 600; }
+.leg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.leg-circle { border-radius: 50%; flex-shrink: 0; }
+
+/* SIDE PANEL */
+#side-panel { width: 290px; flex-shrink: 0; background: white; border-left: 1px solid #E0E4E8; display: flex; flex-direction: column; overflow: hidden; }
+
+.side-hdr { padding: 12px 14px 10px; border-bottom: 1px solid #E8ECF0; flex-shrink: 0; }
+.side-hdr h2 { font-size: 13px; font-weight: 600; }
+.side-hdr p  { font-size: 11px; color: #90A4AE; margin-top: 2px; }
+
+/* Type filter buttons */
+.filters-wrap { padding: 10px 14px; border-bottom: 1px solid #E8ECF0; flex-shrink: 0; }
+.filters-title { font-size: 10px; text-transform: uppercase; color: #90A4AE; letter-spacing: .06em; margin-bottom: 8px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+.toggle-all { font-size: 10px; color: #3498DB; cursor: pointer; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.type-filters { display: flex; flex-direction: column; gap: 4px; }
+.type-btn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 8px; border-radius: 6px; border: 1.5px solid;
+  cursor: pointer; font-size: 11px; font-weight: 500;
+  background: white; text-align: left; transition: all .15s;
+  width: 100%;
+}
+.type-btn .tb-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.type-btn .tb-name { flex: 1; }
+.type-btn .tb-count { font-size: 10px; font-weight: 700; min-width: 24px; text-align: right; }
+.type-btn.on  { color: white; }
+.type-btn.off { opacity: 0.38; background: white !important; }
+
+/* Ranking list */
+.rank-hdr { padding: 8px 14px 6px; border-bottom: 1px solid #E8ECF0; flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; }
+.rank-hdr strong { font-size: 12px; }
+.rank-hdr span   { font-size: 11px; color: #90A4AE; }
+.rank-scroll { flex: 1; overflow-y: auto; }
+.rank-row { display: flex; align-items: center; gap: 6px; padding: 5px 14px; border-bottom: 0.5px solid #F5F5F5; cursor: pointer; }
+.rank-row:hover { background: #FAFBFC; }
+.rank-nr   { font-size: 10px; color: #B0BEC5; min-width: 16px; text-align: right; }
+.rank-name { font-size: 11px; flex: 1; color: #2C3E50; }
+.rank-bar-w { width: 44px; flex-shrink: 0; }
+.rank-bar  { height: 6px; border-radius: 3px; }
+.rank-val  { font-size: 11px; font-weight: 600; min-width: 26px; text-align: right; }
+.side-foot { padding: 8px 14px; border-top: 1px solid #E8ECF0; font-size: 10px; color: #B0BEC5; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">+</div>
+  <div>
+    <h1>LRK Savanorių veiklos žemėlapis</h1>
+    <p>Savanorių pasiskirstymas pagal veiklos tipą ir savivaldybę</p>
+  </div>
+  <div class="hdr-meta">Atnaujinta: 2026-04-09<br>Šaltinis: Volunteers_Activity.xlsx</div>
+</header>
+
+<div class="content">
+  <div id="map-panel">
+    <div id="map"></div>
+    <div class="map-summary" id="sum"></div>
+    <div class="legend-box" id="leg"></div>
+  </div>
+
+  <div id="side-panel">
+    <div class="side-hdr">
+      <h2>Veiklos tipai</h2>
+      <p>Įjunkite/išjunkite tipus · Spustelėkite vietą — priartėja</p>
+    </div>
+
+    <div class="filters-wrap">
+      <div class="filters-title">
+        Filtrai
+        <span class="toggle-all" onclick="toggleAll()">Įjungti/išjungti viską</span>
+      </div>
+      <div class="type-filters" id="type-filters"></div>
+    </div>
+
+    <div class="rank-hdr">
+      <strong id="rank-title">Top 10 savivaldybių</strong>
+      <span id="rank-sub">iš viso</span>
+    </div>
+    <div class="rank-scroll" id="rank-list"></div>
+    <div class="side-foot" id="side-foot"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+
+// ── Duomenys ──────────────────────────────────────────────────────────────
+var VOL = {
+  "Akmenės r. sav.":     {adm:0,akr:0,cs:0,hum:0,int:0,jau:0,pes:1,pp:0,ppp:0,sa:0},
+  "Alytaus m. sav.":     {adm:13,akr:0,cs:4,hum:0,int:0,jau:0,pes:5,pp:1,ppp:0,sa:14},
+  "Alytaus r. sav.":     {adm:0,akr:0,cs:0,hum:0,int:0,jau:0,pes:0,pp:0,ppp:0,sa:13},
+  "Anykščių r. sav.":    {adm:2,akr:0,cs:1,hum:0,int:0,jau:0,pes:0,pp:0,ppp:0,sa:2},
+  "Birštono sav.":       {adm:0,akr:0,cs:0,hum:1,int:0,jau:0,pes:0,pp:0,ppp:0,sa:0},
+  "Biržų r. sav.":       {adm:0,akr:0,cs:0,hum:1,int:0,jau:0,pes:1,pp:0,ppp:0,sa:1},
+  "Druskininkų sav.":    {adm:0,akr:0,cs:7,hum:0,int:0,jau:0,pes:0,pp:0,ppp:0,sa:0},
+  "Elektrėnų sav.":      {adm:3,akr:1,cs:5,hum:4,int:2,jau:2,pes:0,pp:1,ppp:1,sa:29},
+  "Jonavos r. sav.":     {adm:1,akr:0,cs:2,hum:0,int:0,jau:3,pes:0,pp:0,ppp:0,sa:0},
+  "Kaišiadorių r. sav.": {adm:0,akr:0,cs:2,hum:0,int:0,jau:7,pes:0,pp:0,ppp:0,sa:6},
+  "Kalvarijos sav.":     {adm:0,akr:0,cs:0,hum:0,int:0,jau:0,pes:1,pp:0,ppp:0,sa:0},
+  "Kauno m. sav.":       {adm:0,akr:2,cs:17,hum:0,int:15,jau:8,pes:36,pp:8,ppp:9,sa:29},
+  "Kauno r. sav.":       {adm:0,akr:0,cs:1,hum:0,int:1,jau:2,pes:2,pp:1,ppp:0,sa:1},
+  "Kėdainių r. sav.":    {adm:0,akr:0,cs:3,hum:0,int:0,jau:0,pes:0,pp:0,ppp:0,sa:2},
+  "Klaipėdos m. sav.":   {adm:2,akr:2,cs:7,hum:0,int:8,jau:16,pes:13,pp:3,ppp:1,sa:7},
+  "Klaipėdos r. sav.":   {adm:1,akr:1,cs:1,hum:0,int:2,jau:0,pes:2,pp:0,ppp:1,sa:0},
+  "Kupiškio r. sav.":    {adm:0,akr:0,cs:0,hum:1,int:0,jau:0,pes:0,pp:0,ppp:0,sa:7},
+  "Lazdijų r. sav.":     {adm:3,akr:0,cs:2,hum:0,int:0,jau:0,pes:0,pp:0,ppp:0,sa:1},
+  "Marijampolės sav.":   {adm:0,akr:0,cs:0,hum:0,int:0,jau:0,pes:1,pp:1,ppp:0,sa:0},
+  "Mažeikių r. sav.":    {adm:5,akr:0,cs:1,hum:0,int:0,jau:12,pes:6,pp:2,ppp:0,sa:10},
+  "Molėtų r. sav.":      {adm:0,akr:0,cs:0,hum:0,int:0,jau:0,pes:0,pp:0,ppp:1,sa:3},
+  "Palangos m. sav.":    {adm:8,akr:0,cs:0,hum:0,int:0,jau:0,pes:1,pp:1,ppp:1,sa:13},
+  "Panevėžio m. sav.":   {adm:0,akr:3,cs:4,hum:5,int:0,jau:4,pes:10,pp:2,ppp:1,sa:13},
+  "Panevėžio r. sav.":   {adm:0,akr:0,cs:0,hum:0,int:0,jau:0,pes:0,pp:0,ppp:0,sa:1},
+  "Pasvalio r. sav.":    {adm:0,akr:0,cs:0,hum:0,int:0,jau:0,pes:0,pp:0,ppp:0,sa:1},
+  "Plungės r. sav.":     {adm:1,akr:0,cs:0,hum:0,int:0,jau:0,pes:0,pp:0,ppp:0,sa:0},
+  "Prienų r. sav.":      {adm:0,akr:0,cs:0,hum:0,int:0,jau:0,pes:1,pp:0,ppp:0,sa:2},
+  "Radviliškio r. sav.": {adm:0,akr:0,cs:1,hum:1,int:0,jau:8,pes:0,pp:1,ppp:0,sa:3},
+  "Raseinių r. sav.":    {adm:1,akr:0,cs:4,hum:0,int:0,jau:0,pes:0,pp:0,ppp:0,sa:0},
+  "Rokiškio r. sav.":    {adm:0,akr:0,cs:1,hum:2,int:0,jau:2,pes:0,pp:4,ppp:1,sa:1},
+  "Šiaulių m. sav.":     {adm:10,akr:14,cs:2,hum:3,int:5,jau:12,pes:18,pp:7,ppp:3,sa:17},
+  "Šiaulių r. sav.":     {adm:3,akr:0,cs:2,hum:0,int:0,jau:1,pes:1,pp:0,ppp:0,sa:2},
+  "Šilalės r. sav.":     {adm:0,akr:0,cs:0,hum:1,int:0,jau:0,pes:0,pp:0,ppp:0,sa:0},
+  "Šilutės r. sav.":     {adm:0,akr:0,cs:0,hum:0,int:0,jau:0,pes:0,pp:1,ppp:0,sa:3},
+  "Širvintų r. sav.":    {adm:0,akr:0,cs:0,hum:0,int:0,jau:0,pes:1,pp:0,ppp:0,sa:0},
+  "Tauragės r. sav.":    {adm:1,akr:0,cs:4,hum:0,int:0,jau:0,pes:0,pp:2,ppp:0,sa:22},
+  "Telšių r. sav.":      {adm:0,akr:0,cs:1,hum:0,int:0,jau:0,pes:2,pp:0,ppp:2,sa:1},
+  "Trakų r. sav.":       {adm:0,akr:0,cs:3,hum:0,int:0,jau:0,pes:0,pp:0,ppp:0,sa:3},
+  "Ukmergės r. sav.":    {adm:2,akr:0,cs:0,hum:4,int:0,jau:1,pes:0,pp:1,ppp:1,sa:5},
+  "Utenos r. sav.":      {adm:0,akr:0,cs:2,hum:0,int:0,jau:5,pes:1,pp:2,ppp:0,sa:18},
+  "Varėnos r. sav.":     {adm:1,akr:0,cs:1,hum:0,int:0,jau:0,pes:1,pp:1,ppp:0,sa:0},
+  "Vilkaviškio r. sav.": {adm:1,akr:0,cs:0,hum:4,int:0,jau:0,pes:5,pp:0,ppp:0,sa:35},
+  "Vilniaus m. sav.":    {adm:2,akr:3,cs:21,hum:1,int:28,jau:20,pes:76,pp:8,ppp:5,sa:13},
+  "Vilniaus r. sav.":    {adm:0,akr:0,cs:1,hum:0,int:1,jau:0,pes:1,pp:0,ppp:0,sa:0},
+  "Visagino m. sav.":    {adm:0,akr:0,cs:0,hum:0,int:1,jau:0,pes:5,pp:0,ppp:0,sa:0},
+  "Zarasų r. sav.":      {adm:0,akr:0,cs:0,hum:0,int:0,jau:0,pes:1,pp:0,ppp:0,sa:0}
+};
+
+// ── Veiklos tipų konfigūracija ────────────────────────────────────────────
+var TYPES = [
+  { key:'pes', label:'Pasirengimo ir ES valdymo', short:'PES',  color:'#1565C0', total:192 },
+  { key:'sa',  label:'Šiltų apsilankymų',         short:'ŠA',   color:'#C0392B', total:278 },
+  { key:'jau', label:'Jaunimo',                   short:'Jau',  color:'#27AE60', total:103 },
+  { key:'cs',  label:'Civilinės saugos',           short:'CS',   color:'#E67E22', total:100 },
+  { key:'int', label:'Integracijos',               short:'Int',  color:'#8E44AD', total:63  },
+  { key:'adm', label:'Administracinė',             short:'Adm',  color:'#2980B9', total:60  },
+  { key:'hum', label:'Humanitarinės pagalbos',     short:'Hum',  color:'#E74C3C', total:28  },
+  { key:'pp',  label:'Pirmosios pagalbos',         short:'PP',   color:'#16A085', total:47  },
+  { key:'ppp', label:'Pirm. psichologinės pagalbos',short:'PPP', color:'#D35400', total:27  },
+  { key:'akr', label:'Akreditacija',               short:'Akr',  color:'#7F8C8D', total:26  },
+];
+
+var COORDS = {
+  "Akmenės r. sav.":[56.245,22.752],"Alytaus m. sav.":[54.402,23.857],
+  "Alytaus r. sav.":[54.230,24.050],"Anykščių r. sav.":[55.525,25.098],
+  "Birštono sav.":[54.620,24.030],"Biržų r. sav.":[56.200,24.754],
+  "Druskininkų sav.":[53.990,23.970],"Elektrėnų sav.":[54.785,24.662],
+  "Jonavos r. sav.":[55.072,24.284],"Kaišiadorių r. sav.":[54.858,24.470],
+  "Kalvarijos sav.":[54.412,23.183],"Kauno m. sav.":[54.899,23.903],
+  "Kauno r. sav.":[54.830,23.700],"Kėdainių r. sav.":[55.288,23.977],
+  "Klaipėdos m. sav.":[55.703,21.144],"Klaipėdos r. sav.":[55.600,21.350],
+  "Kupiškio r. sav.":[55.836,24.968],"Lazdijų r. sav.":[54.238,23.518],
+  "Marijampolės sav.":[54.558,23.358],"Mažeikių r. sav.":[56.309,22.332],
+  "Molėtų r. sav.":[55.231,25.418],"Palangos m. sav.":[55.920,21.065],
+  "Panevėžio m. sav.":[55.735,24.354],"Panevėžio r. sav.":[55.850,24.500],
+  "Pasvalio r. sav.":[56.060,24.396],"Plungės r. sav.":[55.910,21.850],
+  "Prienų r. sav.":[54.638,24.049],"Radviliškio r. sav.":[55.790,23.543],
+  "Raseinių r. sav.":[55.381,23.118],"Rokiškio r. sav.":[55.961,25.584],
+  "Šiaulių m. sav.":[55.926,23.313],"Šiaulių r. sav.":[55.978,23.100],
+  "Šilalės r. sav.":[55.490,22.182],"Šilutės r. sav.":[55.348,21.468],
+  "Širvintų r. sav.":[55.043,25.028],"Tauragės r. sav.":[55.252,22.289],
+  "Telšių r. sav.":[55.983,22.250],"Trakų r. sav.":[54.638,24.933],
+  "Ukmergės r. sav.":[55.239,24.755],"Utenos r. sav.":[55.498,25.603],
+  "Varėnos r. sav.":[54.218,24.578],"Vilkaviškio r. sav.":[54.652,23.033],
+  "Vilniaus m. sav.":[54.687,25.279],"Vilniaus r. sav.":[54.780,25.600],
+  "Visagino m. sav.":[55.602,26.431],"Zarasų r. sav.":[55.730,26.245]
+};
+
+// ── Žemėlapis ─────────────────────────────────────────────────────────────
+var map = L.map('map').setView([55.17, 23.88], 7);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '© OpenStreetMap © CartoDB'
+}).addTo(map);
+
+var circleLayer = L.layerGroup().addTo(map);
+
+// aktyvūs tipai
+var active = {};
+TYPES.forEach(function(t){ active[t.key] = true; });
+
+function getActiveVal(d) {
+  var sum = 0;
+  TYPES.forEach(function(t){ if(active[t.key]) sum += d[t.key]||0; });
+  return sum;
+}
+
+function getMaxActive() {
+  var max = 0;
+  Object.values(VOL).forEach(function(d){
+    var v = getActiveVal(d); if(v>max) max=v;
+  });
+  return max;
+}
+
+function makeTooltip(name, d) {
+  var rows = TYPES.map(function(t){
+    var v = d[t.key]||0;
+    if(!v) return '';
+    var on = active[t.key];
+    return '<div style="display:flex;align-items:center;gap:5px;'+(on?'':'opacity:0.35')+'">'
+      +'<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+t.color+'"></span>'
+      +'<span style="font-size:11px;flex:1">'+t.short+'</span>'
+      +'<b style="font-size:11px">'+v+'</b></div>';
+  }).filter(Boolean).join('');
+  var total = Object.keys(d).reduce(function(s,k){ return s+(d[k]||0); },0);
+  return '<div style="font-family:Segoe UI,Arial,sans-serif;min-width:170px">'
+    +'<div style="font-weight:700;font-size:13px;margin-bottom:6px">'+name+'</div>'
+    +rows
+    +'<div style="margin-top:6px;padding-top:5px;border-top:1px solid #eee;font-size:12px;font-weight:600">Iš viso: '+total+'</div>'
+    +'</div>';
+}
+
+function renderMap() {
+  circleLayer.clearLayers();
+  var maxVal = Math.max(getMaxActive(), 1);
+
+  // Grey base dots
+  Object.keys(COORDS).forEach(function(name){
+    L.circleMarker(COORDS[name], {
+      radius:4, fillColor:'#CFD8DC', color:'white', weight:1, fillOpacity:0.5
+    }).addTo(circleLayer);
+  });
+
+  // Data circles — stacked by type, largest first
+  Object.keys(VOL).forEach(function(name){
+    var coord = COORDS[name];
+    if(!coord) return;
+    var d = VOL[name];
+    var total = getActiveVal(d);
+    if(total===0) return;
+
+    var r = Math.max(5, Math.sqrt(total/maxVal)*38);
+
+    // Single blended circle — color = dominant active type
+    var domType = null, domVal = 0;
+    TYPES.forEach(function(t){
+      if(active[t.key] && (d[t.key]||0) > domVal){ domVal=d[t.key]; domType=t; }
+    });
+    var col = domType ? domType.color : '#546E7A';
+
+    L.circleMarker(coord, {
+      radius: r, fillColor: col, color: 'white', weight: 1.5, fillOpacity: 0.78
+    }).bindTooltip(makeTooltip(name, d), { sticky:true })
+      .on('click', function(){ map.flyTo(coord, 11, {duration:0.7}); })
+      .addTo(circleLayer);
+  });
+
+  updateSummary(maxVal);
+  updateLegend(maxVal);
+  updateRankList();
+}
+
+function updateSummary(maxVal) {
+  var totActive = 0, totAll = 0, covMun = 0;
+  TYPES.forEach(function(t){ if(active[t.key]) totActive += t.total; totAll += t.total; });
+  Object.values(VOL).forEach(function(d){ if(getActiveVal(d)>0) covMun++; });
+  var activeCount = Object.keys(active).filter(function(k){ return active[k]; }).length;
+  document.getElementById('sum').innerHTML =
+    '<div class="sum-title">Suvestinė</div>'
+    +'<div class="sum-row"><span>Rodomi savanoriai</span><span class="sum-val">'+totActive+'</span></div>'
+    +'<div class="sum-row"><span>Iš viso duomenyse</span><span class="sum-val">'+totAll+'</span></div>'
+    +'<div class="sum-row"><span>Aktyvūs tipai</span><span class="sum-val">'+activeCount+'/'+TYPES.length+'</span></div>'
+    +'<div class="sum-row"><span>Savivaldybės</span><span class="sum-val">'+covMun+'</span></div>';
+}
+
+function updateLegend(maxVal) {
+  var steps = [1, Math.round(maxVal*0.3), Math.round(maxVal*0.6), maxVal].filter(function(v,i,a){return v>0&&a.indexOf(v)===i;});
+  var html = '<div class="leg-title">Apskritimo dydis (iš viso)</div>';
+  steps.forEach(function(s){
+    var r = Math.max(4, Math.sqrt(s/maxVal)*38);
+    html += '<div class="leg-row"><div class="leg-circle" style="width:'+(r*2)+'px;height:'+(r*2)+'px;background:#546E7A;opacity:0.6;min-width:'+(r*2)+'px"></div><span>'+s+'</span></div>';
+  });
+  html += '<div style="margin-top:6px;font-size:10px;color:#90A4AE">Spalva = dominuojantis tipas</div>';
+  document.getElementById('leg').innerHTML = html;
+}
+
+function updateRankList() {
+  var sorted = Object.keys(VOL)
+    .map(function(n){ return {name:n, val:getActiveVal(VOL[n])}; })
+    .filter(function(x){ return x.val>0; })
+    .sort(function(a,b){ return b.val-a.val; });
+
+  var top = sorted.slice(0,10);
+  var maxV = top.length ? top[0].val : 1;
+  var activeNames = TYPES.filter(function(t){return active[t.key];}).map(function(t){return t.short;}).join(', ');
+
+  document.getElementById('rank-sub').textContent = activeNames || '—';
+
+  var html = top.map(function(d,i){
+    var coord = COORDS[d.name];
+    var w = Math.round(d.val/maxV*40);
+    var domType = null, domVal=0;
+    TYPES.forEach(function(t){ if(active[t.key]&&(VOL[d.name][t.key]||0)>domVal){domVal=VOL[d.name][t.key];domType=t;} });
+    var col = domType?domType.color:'#546E7A';
+    var shortName = d.name.replace(' sav.','').replace(' r.','');
+    return '<div class="rank-row" onclick="flyTo('+coord[0]+','+coord[1]+')">'
+      +'<div class="rank-nr">'+(i+1)+'</div>'
+      +'<div class="rank-name">'+shortName+'</div>'
+      +'<div class="rank-bar-w"><div class="rank-bar" style="width:'+w+'px;background:'+col+'"></div></div>'
+      +'<div class="rank-val" style="color:'+col+'">'+d.val+'</div>'
+      +'</div>';
+  }).join('');
+  document.getElementById('rank-list').innerHTML = html || '<div style="padding:16px;font-size:12px;color:#B0BEC5;text-align:center">Pasirinkite bent vieną tipą</div>';
+
+  var totAll = Object.values(VOL).reduce(function(s,d){return s+getActiveVal(d);},0);
+  document.getElementById('side-foot').textContent = 'Iš viso rodoma: '+totAll+' savanorių · '+sorted.length+' savivaldybių';
+}
+
+function flyTo(lat,lng){ map.flyTo([lat,lng],11,{duration:0.8}); }
+
+// ── Filter buttons ────────────────────────────────────────────────────────
+function buildFilters() {
+  var tf = document.getElementById('type-filters');
+  TYPES.forEach(function(t){
+    var btn = document.createElement('button');
+    btn.className = 'type-btn on';
+    btn.id = 'btn-'+t.key;
+    btn.style.borderColor = t.color;
+    btn.style.background  = t.color;
+    btn.style.color = 'white';
+    btn.innerHTML = '<span class="tb-dot" style="background:white"></span>'
+      +'<span class="tb-name">'+t.label+'</span>'
+      +'<span class="tb-count">'+t.total+'</span>';
+    btn.onclick = function(){ toggleType(t.key); };
+    tf.appendChild(btn);
+  });
+}
+
+function toggleType(key) {
+  var on = Object.keys(active).filter(function(k){return active[k];});
+  if(active[key] && on.length<=1) return;
+  active[key] = !active[key];
+  var t = TYPES.find(function(x){return x.key===key;});
+  var btn = document.getElementById('btn-'+key);
+  if(active[key]){
+    btn.className='type-btn on';
+    btn.style.background=t.color; btn.style.color='white'; btn.style.borderColor=t.color;
+    btn.querySelector('.tb-dot').style.background='white';
+  } else {
+    btn.className='type-btn off';
+    btn.style.background='white'; btn.style.color=t.color; btn.style.borderColor=t.color;
+    btn.querySelector('.tb-dot').style.background=t.color;
+  }
+  renderMap();
+}
+
+var allOn = true;
+function toggleAll(){
+  var on = Object.keys(active).filter(function(k){return active[k];});
+  if(on.length>1){ // turn all off except first
+    allOn = false;
+    TYPES.forEach(function(t,i){
+      if(i>0 && active[t.key]){ active[t.key]=false; refreshBtn(t); }
+    });
+  } else { // turn all on
+    allOn = true;
+    TYPES.forEach(function(t){ active[t.key]=true; refreshBtn(t); });
+  }
+  renderMap();
+}
+
+function refreshBtn(t){
+  var btn = document.getElementById('btn-'+t.key);
+  if(active[t.key]){
+    btn.className='type-btn on'; btn.style.background=t.color; btn.style.color='white'; btn.style.borderColor=t.color;
+    btn.querySelector('.tb-dot').style.background='white';
+  } else {
+    btn.className='type-btn off'; btn.style.background='white'; btn.style.color=t.color; btn.style.borderColor=t.color;
+    btn.querySelector('.tb-dot').style.background=t.color;
+  }
+}
+
+buildFilters();
+renderMap();
+</script>
+</body>
+</html>
