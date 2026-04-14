@@ -20,29 +20,35 @@ header p  { font-size: 11px; opacity: 0.55; }
 #map-panel { flex: 1; position: relative; }
 #map { width: 100%; height: 100%; }
 
-/* Filter buttons */
-.filter-bar { position: absolute; top: 12px; left: 12px; z-index: 1000; display: flex; gap: 5px; flex-wrap: wrap; max-width: 55%; }
+/* Filter bar — žemiau zoom mygtukų */
+.filter-bar {
+  position: absolute;
+  top: 10px;
+  left: 54px;
+  z-index: 1000;
+  display: flex; gap: 5px; flex-wrap: wrap; max-width: 75%;
+}
 .flt-btn { padding: 5px 13px; border-radius: 20px; border: 2px solid; cursor: pointer; font-size: 11px; font-weight: 600; background: white; box-shadow: 0 1px 5px rgba(0,0,0,0.12); transition: all .15s; display: flex; align-items: center; gap: 5px; }
 .flt-btn .fd { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .flt-btn.on  { color: white; }
 .flt-btn.off { opacity: 0.38; }
 
 /* Summary */
-.map-summary { position: absolute; top: 12px; right: 12px; z-index: 1000; background: white; border-radius: 10px; padding: 12px 16px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); font-size: 12px; min-width: 175px; }
-.sum-title { font-size: 10px; text-transform: uppercase; color: #90A4AE; letter-spacing: .06em; margin-bottom: 8px; font-weight: 600; }
+.map-summary { position: absolute; top: 12px; right: 12px; z-index: 1000; background: white; border-radius: 10px; padding: 10px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); font-size: 12px; min-width: 175px; }
+.sum-title { font-size: 10px; text-transform: uppercase; color: #90A4AE; letter-spacing: .06em; margin-bottom: 6px; font-weight: 600; }
 .sum-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 0.5px solid #F0F2F4; gap: 8px; }
-.sum-row:last-child { border-bottom: none; }
+.sum-row:last-child { border-bottom: none; font-weight: 700; }
 .sum-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .sum-label { flex: 1; color: #546E7A; }
 .sum-val { font-weight: 600; }
 
 /* Legend */
-.map-legend { position: absolute; bottom: 24px; left: 12px; z-index: 1000; background: white; border-radius: 10px; padding: 12px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); font-size: 11px; }
-.leg-title { font-size: 10px; text-transform: uppercase; color: #90A4AE; letter-spacing: .06em; margin-bottom: 8px; font-weight: 600; }
+.map-legend { position: absolute; bottom: 24px; left: 12px; z-index: 1000; background: white; border-radius: 10px; padding: 10px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); font-size: 11px; }
+.leg-title { font-size: 10px; text-transform: uppercase; color: #90A4AE; letter-spacing: .06em; margin-bottom: 6px; font-weight: 600; }
 .leg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .leg-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
 
-/* Side list */
+/* Side panel */
 #side-panel { width: 265px; flex-shrink: 0; background: white; border-left: 1px solid #E0E4E8; display: flex; flex-direction: column; overflow: hidden; }
 .side-title { padding: 12px 16px 8px; border-bottom: 1px solid #E8ECF0; flex-shrink: 0; }
 .side-title h2 { font-size: 13px; font-weight: 600; }
@@ -54,8 +60,9 @@ header p  { font-size: 11px; opacity: 0.55; }
 .loc-row { padding: 7px 14px; border-bottom: 0.5px solid #F5F5F5; cursor: pointer; }
 .loc-row:hover { background: #F8F9FA; }
 .loc-name { font-size: 12px; font-weight: 500; color: #2C3E50; display: flex; align-items: center; gap: 6px; }
-.loc-sub  { font-size: 11px; color: #90A4AE; margin-top: 1px; padding-left: 16px; }
-.loc-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; color: white; }
+.loc-sub  { font-size: 11px; color: #90A4AE; margin-top: 1px; padding-left: 18px; }
+.loc-sub2 { font-size: 10px; color: #B0BEC5; margin-top: 1px; padding-left: 18px; font-style: italic; }
+.loc-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; color: white; flex-shrink: 0; }
 .side-footer { padding: 8px 14px; border-top: 1px solid #E8ECF0; font-size: 10px; color: #B0BEC5; flex-shrink: 0; }
 </style>
 </head>
@@ -68,8 +75,8 @@ header p  { font-size: 11px; opacity: 0.55; }
     <p>Fizinės vietos pagal tipą</p>
   </div>
   <div class="hdr-meta">
-    Atnaujinta: 2026-04-09<br>
-    Šaltinis: Darbinis_Locations_HR.xlsx
+    Atnaujinta: 2026-04-14<br>
+    Šaltinis: PER_Resource_mapping_Location.xlsx
   </div>
 </header>
 
@@ -99,83 +106,81 @@ header p  { font-size: 11px; opacity: 0.55; }
 <script>
 
 // ══════════════════════════════════════════════════════════════════════════
-// DUOMENYS — atnaujinti 2026-04-09
+// DUOMENYS — atnaujinta 2026-04-14
 // ══════════════════════════════════════════════════════════════════════════
 var LOCATIONS = [
-  { addr:"Alytus",                              info:"",                                   kodas:"",      miestas:"Alytus",      sav:"Alytaus m. sav.",      aps:"Alytaus",       tipas:"",                 lat:54.4024, lng:23.8568 },
-  { addr:"Statybininkų 12, Kaunas",             info:"",                                   kodas:"50127", miestas:"Kaunas",      sav:"Kauno m. sav.",         aps:"Kauno",         tipas:"Biuras",           lat:54.9057, lng:23.9553 },
-  { addr:"Raseiniai",                           info:"",                                   kodas:"",      miestas:"Raseiniai",   sav:"Raseinių r. sav.",      aps:"Kauno",         tipas:"Rezervo sandėlis", lat:55.3813, lng:23.1225 },
-  { addr:"V. Grybo g. 25, Raseiniai",           info:"",                                   kodas:"60117", miestas:"Raseiniai",   sav:"Raseinių r. sav.",      aps:"Kauno",         tipas:"",                 lat:55.3754, lng:23.1258 },
-  { addr:"Žemaitės g. 6A, Raseiniai",           info:"",                                   kodas:"60127", miestas:"Raseiniai",   sav:"Raseinių r. sav.",      aps:"Kauno",         tipas:"Biuras",           lat:55.3805, lng:23.1180 },
-  { addr:"Kęstučio g. 5, Vilkaviškis",          info:"",                                   kodas:"70190", miestas:"Vilkaviškis", sav:"Vilkaviškio r. sav.",   aps:"Marijampolės",  tipas:"Biuras",           lat:54.6520, lng:23.0334 },
-  { addr:"Vilkaviškis",                         info:"",                                   kodas:"",      miestas:"Vilkaviškis", sav:"Vilkaviškio r. sav.",   aps:"Marijampolės",  tipas:"Rezervo sandėlis", lat:54.6515, lng:23.0340 },
-  { addr:"Rungos g. 22, Elektrėnai",            info:"",                                   kodas:"26110", miestas:"Elektrėnai",  sav:"Elektrėnų sav.",        aps:"Vilniaus",      tipas:"HP",               lat:54.7850, lng:24.6620 },
-  { addr:"Taikos g. 6B, Elektrėnai",            info:"",                                   kodas:"26115", miestas:"Elektrėnai",  sav:"Elektrėnų sav.",        aps:"Vilniaus",      tipas:"Rezervo sandėlis", lat:54.7793, lng:24.6578 },
-  { addr:"Miškų g. 29, Ukmergė",               info:"",                                   kodas:"20163", miestas:"Ukmergė",     sav:"Ukmergės r. sav.",      aps:"Vilniaus",      tipas:"Biuras",           lat:55.2390, lng:24.7548 },
-  { addr:"Miškų g. 29, Ukmergė",               info:"",                                   kodas:"20163", miestas:"Ukmergė",     sav:"Ukmergės r. sav.",      aps:"Vilniaus",      tipas:"HP",               lat:55.2393, lng:24.7551 },
-  { addr:"Vytauto g. 75A, Ukmergė",             info:"",                                   kodas:"20112", miestas:"Ukmergė",     sav:"Ukmergės r. sav.",      aps:"Vilniaus",      tipas:"Rezervo sandėlis", lat:55.2450, lng:24.7760 },
-  { addr:"Jasinskio g. 16B, Vilnius",           info:'Verslo centras "Victoria", 4 aukštas',kodas:"3163",  miestas:"Vilnius",     sav:"Vilniaus m. sav.",      aps:"Vilniaus",      tipas:"Biuras",           lat:54.6887, lng:25.2628 },
-  { addr:"Jasinskio g. 16B, Vilnius",           info:"Biuras (laikina pasidėjimo vieta?)",  kodas:"3163",  miestas:"Vilnius",     sav:"Vilniaus m. sav.",      aps:"Vilniaus",      tipas:"Rezervo sandėlis", lat:54.6887, lng:25.2628 },
-  { addr:"Vilnius",                             info:"",                                   kodas:"",      miestas:"Vilnius",     sav:"Vilniaus m. sav.",      aps:"Vilniaus",      tipas:"Rezervo sandėlis", lat:54.6872, lng:25.2797 },
-  { addr:"Vilnius",                             info:"",                                   kodas:"",      miestas:"Vilnius",     sav:"Vilniaus m. sav.",      aps:"Vilniaus",      tipas:"Rezervo sandėlis", lat:54.6880, lng:25.2810 },
-  { addr:"Vilnius",                             info:"",                                   kodas:"",      miestas:"Vilnius",     sav:"Vilniaus m. sav.",      aps:"Vilniaus",      tipas:"Rezervo sandėlis", lat:54.6865, lng:25.2785 },
-  { addr:"Balto g. 1, Ramybės k., Visagino sav.",info:"",                                  kodas:"31139", miestas:"Visaginas",   sav:"Visagino sav.",         aps:"Utenos",        tipas:"Rezervo sandėlis", lat:55.5900, lng:26.4100 },
-  { addr:"Vilties g. 1, Visaginas",             info:"",                                   kodas:"31118", miestas:"Visaginas",   sav:"Visagino sav.",         aps:"Utenos",        tipas:"Biuras",           lat:55.6020, lng:26.4310 },
-  { addr:"Vilties g. 1, Visaginas",             info:"",                                   kodas:"31118", miestas:"Visaginas",   sav:"Visagino sav.",         aps:"Utenos",        tipas:"HP",               lat:55.6022, lng:26.4313 },
-  { addr:"Klaipėdos g. 3, Panevėžys",           info:"",                                   kodas:"35200", miestas:"Panevėžys",   sav:"Panevėžio m. sav.",     aps:"Panevėžio",     tipas:"Biuras",           lat:55.7330, lng:24.3540 },
-  { addr:"Panevėžys",                           info:"",                                   kodas:"",      miestas:"Panevėžys",   sav:"Panevėžio m. sav.",     aps:"Panevėžio",     tipas:"Rezervo sandėlis", lat:55.7348, lng:24.3574 },
-  { addr:"J.Biliūno g. 2, Rokiškis",            info:"",                                   kodas:"42105", miestas:"Rokiškis",    sav:"Rokiškio r. sav.",      aps:"Panevėžio",     tipas:"Biuras",           lat:55.9612, lng:25.5842 },
-  { addr:"Šiauliai",                            info:"",                                   kodas:"",      miestas:"Šiauliai",    sav:"Šiaulių m. sav.",       aps:"Šiaulių",       tipas:"Rezervo sandėlis", lat:55.9349, lng:23.3137 },
-  { addr:"Tilžės g. 148, Šiauliai",             info:"",                                   kodas:"76350", miestas:"Šiauliai",    sav:"Šiaulių m. sav.",       aps:"Šiaulių",       tipas:"Biuras",           lat:55.9257, lng:23.3130 },
-  { addr:"Ventos g. 8A, Mažeikiai",             info:"",                                   kodas:"89103", miestas:"Mažeikiai",   sav:"Mažeikių r. sav.",      aps:"Telšių",        tipas:"",                 lat:56.3090, lng:22.3320 },
-  { addr:"Anykščiai",                           info:"",                                   kodas:"",      miestas:"Anykščiai",   sav:"Anykščių r. sav.",      aps:"Utenos",        tipas:"",                 lat:55.5253, lng:25.0979 },
-  { addr:"Lauko g. 19A, Utena",                 info:"2 aukštas",                          kodas:"28203", miestas:"Utena",       sav:"Utenos r. sav.",        aps:"Utenos",        tipas:"Biuras",           lat:55.4972, lng:25.6028 },
-  { addr:"Molėtai",                             info:"",                                   kodas:"",      miestas:"Molėtai",     sav:"Molėtų r. sav.",        aps:"Utenos",        tipas:"",                 lat:55.2312, lng:25.4184 },
-  { addr:"Klaipėda",                            info:"",                                   kodas:"",      miestas:"Klaipėda",    sav:"Klaipėdos m. sav.",     aps:"Klaipėdos",     tipas:"Rezervo sandėlis", lat:55.7033, lng:21.1443 },
-  { addr:"Taikos pr. 28, Klaipėda",             info:"5 aukštas",                          kodas:"91220", miestas:"Klaipėda",    sav:"Klaipėdos m. sav.",     aps:"Klaipėdos",     tipas:"Biuras",           lat:55.6980, lng:21.1550 },
-  { addr:"Tauragė",                             info:"",                                   kodas:"",      miestas:"Tauragė",     sav:"Tauragės r. sav.",      aps:"Tauragės",      tipas:"Rezervo sandėlis", lat:55.2520, lng:22.2890 },
-  { addr:"V.Kudirkos g. 2A, Tauragė",           info:"",                                   kodas:"72215", miestas:"Tauragė",     sav:"Tauragės r. sav.",      aps:"Tauragės",      tipas:"Biuras",           lat:55.2524, lng:22.2895 },
+  {addr:"Alytus",tipas:"Biuras",info:"",kodas:"",miestas:"Alytus",sav:"Alytaus m. sav.",aps:"Alytaus",regionas:"Pietų",skyrius:"Alytus",atsakingas:"Bernadeta Levšinienė",lat:54.4024,lng:23.8568},
+  {addr:"Statybininkų g. 12, Kaunas",tipas:"Biuras",info:"",kodas:"50127",miestas:"Kaunas",sav:"Kauno m. sav.",aps:"Kauno",regionas:"Pietų",skyrius:"Kaunas",atsakingas:"Skaistė Čiurlytė Danilevičienė",lat:54.9057,lng:23.9553},
+  {addr:"V. Grybo g. 23, Raseiniai",tipas:"Rezervo sandėlis",info:"",kodas:"60117",miestas:"Raseiniai",sav:"Raseinių r. sav.",aps:"Kauno",regionas:"Pietų",skyrius:"Raseiniai",atsakingas:"",lat:55.386116,lng:23.119855},
+  {addr:"V. Grybo g. 25, Raseiniai",tipas:"Biuras",info:"",kodas:"60117",miestas:"Raseiniai",sav:"Raseinių r. sav.",aps:"Kauno",regionas:"Pietų",skyrius:"Raseiniai",atsakingas:"Alma Kurmauskienė",lat:55.3754,lng:23.1258},
+  {addr:"Žemaitės g. 6A, Raseiniai",tipas:"Biuras",info:"",kodas:"60127",miestas:"Raseiniai",sav:"Raseinių r. sav.",aps:"Kauno",regionas:"Pietų",skyrius:"Raseiniai",atsakingas:"Alma Kurmauskienė",lat:55.3805,lng:23.118},
+  {addr:"Kęstučio g. 5, Vilkaviškis",tipas:"Biuras",info:"",kodas:"70190",miestas:"Vilkaviškis",sav:"Vilkaviškio r. sav.",aps:"Marijampolės",regionas:"Pietų",skyrius:"Vilkaviškis",atsakingas:"Lina Kružinauskienė",lat:54.652,lng:23.0334},
+  {addr:"Stasio Ankevičiaus g. 1, Paežerių km., Pilviškių sen., Vilkaviškio r. sav.",tipas:"Rezervo sandėlis",info:"",kodas:"70309",miestas:"Vilkaviškis",sav:"Vilkaviškio r. sav.",aps:"Marijampolės",regionas:"Pietų",skyrius:"Vilkaviškis",atsakingas:"",lat:54.666581,lng:23.186267},
+  {addr:"Rungos g. 22, Elektrėnai",tipas:"HP",info:"",kodas:"26110",miestas:"Elektrėnai",sav:"Elektrėnų sav.",aps:"Vilniaus",regionas:"Rytų",skyrius:"Elektrėnai",atsakingas:"Rasa Kulevičienė",lat:54.785,lng:24.662},
+  {addr:"Taikos g. 6B, Elektrėnai",tipas:"Rezervo sandėlis",info:"",kodas:"26115",miestas:"Elektrėnai",sav:"Elektrėnų sav.",aps:"Vilniaus",regionas:"Rytų",skyrius:"Elektrėnai",atsakingas:"Rasa Kulevičienė",lat:54.7793,lng:24.6578},
+  {addr:"Miškų g. 29, Ukmergė",tipas:"Biuras",info:"",kodas:"20163",miestas:"Ukmergė",sav:"Ukmergės r. sav.",aps:"Vilniaus",regionas:"Rytų",skyrius:"Ukmergė",atsakingas:"Jolita Cironkienė",lat:55.239,lng:24.7548},
+  {addr:"Miškų g. 29, Ukmergė",tipas:"HP",info:"",kodas:"20163",miestas:"Ukmergė",sav:"Ukmergės r. sav.",aps:"Vilniaus",regionas:"Rytų",skyrius:"Ukmergė",atsakingas:"Jolita Cironkienė",lat:55.2393,lng:24.7551},
+  {addr:"Vytauto g. 75A, Ukmergė",tipas:"Rezervo sandėlis",info:"",kodas:"20112",miestas:"Ukmergė",sav:"Ukmergės r. sav.",aps:"Vilniaus",regionas:"Rytų",skyrius:"Ukmergė",atsakingas:"Jolita Cironkienė",lat:55.245,lng:24.776},
+  {addr:"J. Jasinskio g. 16B, Vilnius",tipas:"Biuras",info:'Verslo centras "Victoria", 4 aukštas',kodas:"3163",miestas:"Vilnius",sav:"Vilniaus m. sav.",aps:"Vilniaus",regionas:"Rytų",skyrius:"Vilnius",atsakingas:"",lat:54.6887,lng:25.2628},
+  {addr:"J. Jasinskio g. 16B, Vilnius",tipas:"Rezervo sandėlis",info:"Biuras (laikina pasidėjimo vieta?)",kodas:"3163",miestas:"Vilnius",sav:"Vilniaus m. sav.",aps:"Vilniaus",regionas:"Rytų",skyrius:"Vilnius",atsakingas:"",lat:54.6887,lng:25.2628},
+  {addr:"Terminalo g. 8, Vilnius, Kuprioniškės",tipas:"Rezervo sandėlis",info:"",kodas:"2230",miestas:"Vilnius",sav:"Vilniaus m. sav.",aps:"Vilniaus",regionas:"Rytų",skyrius:"Vilnius",atsakingas:"",lat:54.644024,lng:25.327469},
+  {addr:"Balto g. 1, Ramybės k., Visagino sav.",tipas:"Rezervo sandėlis",info:"",kodas:"31139",miestas:"Visaginas",sav:"Visagino sav.",aps:"Utenos",regionas:"Rytų",skyrius:"Visaginas",atsakingas:"Jolita Cironkienė",lat:55.59,lng:26.41},
+  {addr:"Vilties g. 1, Visaginas",tipas:"Biuras",info:"",kodas:"31118",miestas:"Visaginas",sav:"Visagino sav.",aps:"Utenos",regionas:"Rytų",skyrius:"Visaginas",atsakingas:"Jolita Cironkienė",lat:55.602,lng:26.431},
+  {addr:"Vilties g. 1, Visaginas",tipas:"HP",info:"",kodas:"31118",miestas:"Visaginas",sav:"Visagino sav.",aps:"Utenos",regionas:"Rytų",skyrius:"Visaginas",atsakingas:"Jolita Cironkienė",lat:55.6022,lng:26.4313},
+  {addr:"Klaipėdos g. 3, Panevėžys",tipas:"Biuras",info:"",kodas:"35200",miestas:"Panevėžys",sav:"Panevėžio m. sav.",aps:"Panevėžio",regionas:"Šiaurės",skyrius:"Panevėžys",atsakingas:"",lat:55.733,lng:24.354},
+  {addr:"Klaipėdos g. 3, Panevėžys",tipas:"Rezervo sandėlis",info:"",kodas:"35199",miestas:"Panevėžys",sav:"Panevėžio m. sav.",aps:"Panevėžio",regionas:"Šiaurės",skyrius:"Panevėžys",atsakingas:"",lat:55.727333,lng:24.361485},
+  {addr:"Beržų g. 35, Jūžintai, Jūžintų sen., Rokiškio r. sav.",tipas:"Rezervo sandėlis",info:"Buvusi mokykla, buvo nuvežti baldai",kodas:"42263",miestas:"Rokiškis",sav:"Rokiškio r. sav.",aps:"Panevėžio",regionas:"Šiaurės",skyrius:"Rokiškis",atsakingas:"",lat:55.957049,lng:25.574131},
+  {addr:"J. Biliūno g. 2, Rokiškis",tipas:"Biuras",info:"",kodas:"42105",miestas:"Rokiškis",sav:"Rokiškio r. sav.",aps:"Panevėžio",regionas:"Šiaurės",skyrius:"Rokiškis",atsakingas:"",lat:55.9612,lng:25.5842},
+  {addr:"Kauno g. 6, Šiauliai",tipas:"Rezervo sandėlis",info:"",kodas:"78103",miestas:"Šiauliai",sav:"Šiaulių m. sav.",aps:"Šiaulių",regionas:"Šiaurės",skyrius:"Šiauliai",atsakingas:"",lat:55.924849,lng:23.306248},
+  {addr:"Tilžės g. 148, Šiauliai",tipas:"Biuras",info:"",kodas:"76350",miestas:"Šiauliai",sav:"Šiaulių m. sav.",aps:"Šiaulių",regionas:"Šiaurės",skyrius:"Šiauliai",atsakingas:"Aistė Žalevičienė",lat:55.9257,lng:23.313},
+  {addr:"Ventos g. 8A, Mažeikiai",tipas:"Biuras",info:"",kodas:"89103",miestas:"Mažeikiai",sav:"Mažeikių r. sav.",aps:"Telšių",regionas:"Šiaurės",skyrius:"Šiauliai",atsakingas:"Grėta Visminienė",lat:56.309,lng:22.332},
+  {addr:"Anykščiai",tipas:"",info:"",kodas:"",miestas:"Anykščiai",sav:"Anykščių r. sav.",aps:"Utenos",regionas:"Šiaurės",skyrius:"Utena",atsakingas:"",lat:55.5253,lng:25.0979},
+  {addr:"Lauko g. 19A, Utena",tipas:"Biuras",info:"2 aukštas",kodas:"28203",miestas:"Utena",sav:"Utenos r. sav.",aps:"Utenos",regionas:"Šiaurės",skyrius:"Utena",atsakingas:"Edita Valiulienė",lat:55.4972,lng:25.6028},
+  {addr:"Molėtai",tipas:"",info:"",kodas:"",miestas:"Molėtai",sav:"Molėtų r. sav.",aps:"Utenos",regionas:"Šiaurės",skyrius:"Utena",atsakingas:"",lat:55.2312,lng:25.4184},
+  {addr:"Taikos pr. 28, Klaipėda",tipas:"Biuras",info:"5 aukštas",kodas:"91220",miestas:"Klaipėda",sav:"Klaipėdos m. sav.",aps:"Klaipėdos",regionas:"Vakarų",skyrius:"Klaipėda",atsakingas:"Valdonė Gedminė",lat:55.698,lng:21.155},
+  {addr:"Uosių g. 8, Dumpiai, Dovilų sen., Klaipėdos r. sav.",tipas:"Rezervo sandėlis",info:"",kodas:"95398",miestas:"Klaipėda",sav:"Klaipėdos raj. sav.",aps:"Klaipėdos",regionas:"Vakarų",skyrius:"Klaipėda",atsakingas:"",lat:55.687774,lng:21.247455},
+  {addr:"Liepų g. 16, Šilutė",tipas:"HP",info:"",kodas:"99184",miestas:"Šilutė",sav:"Šilutės raj. sav.",aps:"Klaipėdos",regionas:"Vakarų",skyrius:"Klaipėda",atsakingas:"",lat:55.3512,lng:21.4681},
+  {addr:"V. Kudirkos g. 2A, Tauragė",tipas:"Rezervo sandėlis",info:"",kodas:"72214",miestas:"Tauragė",sav:"Tauragės r. sav.",aps:"Tauragės",regionas:"Vakarų",skyrius:"Tauragė",atsakingas:"",lat:55.253792,lng:22.284391},
+  {addr:"V. Kudirkos g. 2A, Tauragė",tipas:"Biuras",info:"",kodas:"72215",miestas:"Tauragė",sav:"Tauragės r. sav.",aps:"Tauragės",regionas:"Vakarų",skyrius:"Tauragė",atsakingas:"Jolita Ziekė",lat:55.2524,lng:22.2895},
 ];
 
 var TYPE_CFG = {
-  "Biuras":            { color:"#1565C0", label:"Skyrius / Biuras" },
-  "HP":                { color:"#C62828", label:"HP" },
-  "Rezervo sandėlis":  { color:"#2E7D32", label:"Rezervo sandėlis" },
-  "":                  { color:"#6A1B9A", label:"Nenurodyta" },
+  "Biuras":            {color:"#1565C0", label:"Skyrius / Biuras"},
+  "HP":                {color:"#C62828", label:"HP"},
+  "Rezervo sandėlis":  {color:"#2E7D32", label:"Rezervo sandėlis"},
+  "":                  {color:"#6A1B9A", label:"Nenurodyta"},
 };
 
-function tipColor(t) { return (TYPE_CFG[t]||TYPE_CFG[""]).color; }
-function tipLabel(t) { return (TYPE_CFG[t]||TYPE_CFG[""]).label; }
+function tipColor(t){ return (TYPE_CFG[t]||TYPE_CFG[""]).color; }
+function tipLabel(t){ return (TYPE_CFG[t]||TYPE_CFG[""]).label; }
 
 // ── Žemėlapis ─────────────────────────────────────────────────────────────
 var map = L.map('map').setView([55.17, 23.88], 7);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  attribution: '© OpenStreetMap © CartoDB'
+  attribution:'© OpenStreetMap © CartoDB'
 }).addTo(map);
 
-var cluster = L.markerClusterGroup({ spiderfyOnMaxZoom:true, showCoverageOnHover:false, zoomToBoundsOnClick:true });
+var cluster = L.markerClusterGroup({spiderfyOnMaxZoom:true,showCoverageOnHover:false,zoomToBoundsOnClick:true});
 map.addLayer(cluster);
 
-function makeIcon(color) {
-  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">'
+function makeIcon(color){
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 22 22">'
     +'<circle cx="11" cy="11" r="9" fill="'+color+'" stroke="white" stroke-width="2.5"/></svg>';
-  return L.divIcon({ className:'', html:svg, iconSize:[22,22], iconAnchor:[11,11], popupAnchor:[0,-12] });
+  return L.divIcon({className:'',html:svg,iconSize:[22,22],iconAnchor:[11,11],popupAnchor:[0,-12]});
 }
 
 // ── Filtrai ────────────────────────────────────────────────────────────────
 var activeFilters = {};
-var allTypes = Object.keys(TYPE_CFG);
-allTypes.forEach(function(t){ activeFilters[t] = true; });
+Object.keys(TYPE_CFG).forEach(function(t){ activeFilters[t]=true; });
 
-function renderFilterBar() {
-  var counts = {};
-  allTypes.forEach(function(t){ counts[t]=0; });
-  LOCATIONS.forEach(function(d){ counts[d.tipas] = (counts[d.tipas]||0)+1; });
+function renderFilterBar(){
+  var counts={};
+  Object.keys(TYPE_CFG).forEach(function(t){counts[t]=0;});
+  LOCATIONS.forEach(function(d){counts[d.tipas]=(counts[d.tipas]||0)+1;});
 
-  var fb = document.getElementById('filter-bar');
-  fb.innerHTML = allTypes.filter(function(t){ return counts[t]>0; }).map(function(t) {
-    var c = tipColor(t);
-    var on = activeFilters[t];
+  var fb=document.getElementById('filter-bar');
+  fb.innerHTML=Object.keys(TYPE_CFG).filter(function(t){return counts[t]>0;}).map(function(t){
+    var c=tipColor(t), on=activeFilters[t];
     return '<button class="flt-btn '+(on?'on':'off')+'" '
       +'style="border-color:'+c+';'+(on?'background:'+c:'color:'+c)+'" '
       +'onclick="toggleF(\''+t+'\')">'
@@ -185,109 +190,101 @@ function renderFilterBar() {
   }).join('');
 }
 
-function toggleF(t) {
-  var on = Object.keys(activeFilters).filter(function(k){ return activeFilters[k]; });
-  if (activeFilters[t] && on.length<=1) return;
-  activeFilters[t] = !activeFilters[t];
+function toggleF(t){
+  var on=Object.keys(activeFilters).filter(function(k){return activeFilters[k];});
+  if(activeFilters[t]&&on.length<=1)return;
+  activeFilters[t]=!activeFilters[t];
   renderMap();
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────
-function renderMap() {
+function renderMap(){
   cluster.clearLayers();
   renderFilterBar();
+  var counts={};
+  Object.keys(TYPE_CFG).forEach(function(t){counts[t]=0;});
 
-  var counts = {};
-  allTypes.forEach(function(t){ counts[t]=0; });
-
-  LOCATIONS.forEach(function(d, idx) {
-    if (!activeFilters[d.tipas]) return;
+  LOCATIONS.forEach(function(d){
+    if(!activeFilters[d.tipas])return;
     counts[d.tipas]++;
-    var col = tipColor(d.tipas);
-    var m = L.marker([d.lat, d.lng], { icon: makeIcon(col) });
+    var col=tipColor(d.tipas);
+    var m=L.marker([d.lat,d.lng],{icon:makeIcon(col)});
 
-    var popup = '<div style="font-family:Segoe UI,Arial,sans-serif;min-width:200px">'
+    var popup='<div style="font-family:Segoe UI,Arial,sans-serif;min-width:210px">'
       +'<div style="font-weight:700;font-size:13px;margin-bottom:5px">'+d.addr+'</div>'
       +(d.info?'<div style="font-size:11px;color:#888;margin-bottom:4px;font-style:italic">'+d.info+'</div>':'')
-      +'<div style="font-size:11px;color:#546E7A;margin-bottom:3px">'+d.miestas+(d.sav?', '+d.sav:'')+'</div>'
-      +(d.kodas?'<div style="font-size:11px;color:#90A4AE;margin-bottom:5px">Pašto kodas: '+d.kodas+'</div>':'')
-      +'<span style="background:'+col+';color:white;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">'
-      +tipLabel(d.tipas)+'</span></div>';
+      +'<div style="font-size:11px;color:#555;margin-bottom:2px">'+d.miestas+(d.sav?' · '+d.sav:'')+'</div>'
+      +(d.skyrius?'<div style="font-size:11px;color:#555;margin-bottom:2px">Skyrius: <b>'+d.skyrius+'</b></div>':'')
+      +(d.regionas?'<div style="font-size:11px;color:#555;margin-bottom:2px">Regionas: '+d.regionas+'</div>':'')
+      +(d.atsakingas?'<div style="font-size:11px;color:#555;margin-bottom:5px">Atsakingas: '+d.atsakingas+'</div>':'')
+      +(d.kodas?'<div style="font-size:10px;color:#90A4AE;margin-bottom:5px">Pašto kodas: '+d.kodas+'</div>':'')
+      +'<span style="background:'+col+';color:white;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">'+tipLabel(d.tipas)+'</span>'
+      +'</div>';
     m.bindPopup(popup);
     cluster.addLayer(m);
   });
 
   // Summary
-  var html = '<div class="sum-title">Suvestinė</div>';
-  allTypes.forEach(function(t) {
-    if (!counts[t]) return;
-    html += '<div class="sum-row">'
+  var html='<div class="sum-title">Suvestinė</div>';
+  Object.keys(TYPE_CFG).forEach(function(t){
+    if(!counts[t])return;
+    html+='<div class="sum-row">'
       +'<span class="sum-dot" style="background:'+tipColor(t)+'"></span>'
       +'<span class="sum-label">'+tipLabel(t)+'</span>'
       +'<span class="sum-val">'+counts[t]+'</span></div>';
   });
-  var total = Object.values(counts).reduce(function(a,b){return a+b;},0);
-  html += '<div class="sum-row" style="margin-top:4px;padding-top:4px;border-top:1px solid #eee;font-weight:700">'
+  var total=Object.values(counts).reduce(function(a,b){return a+b;},0);
+  html+='<div class="sum-row" style="margin-top:4px;padding-top:4px;border-top:1px solid #eee;font-weight:700">'
     +'<span style="flex:1">Iš viso</span><span class="sum-val">'+total+'</span></div>';
-  document.getElementById('sum').innerHTML = html;
+  document.getElementById('sum').innerHTML=html;
 
   renderList();
 }
 
-// ── Šoninis sąrašas ────────────────────────────────────────────────────────
-function filterList() { renderList(); }
+// ── Sąrašas ────────────────────────────────────────────────────────────────
+function filterList(){ renderList(); }
 
-function renderList() {
-  var q = (document.getElementById('search-input').value||'').toLowerCase().trim();
-  var visible = LOCATIONS.filter(function(d) {
-    if (!activeFilters[d.tipas]) return false;
-    if (!q) return true;
-    return [d.addr, d.miestas, d.sav, d.tipas, d.info].some(function(s){
-      return s && s.toLowerCase().indexOf(q)>=0;
+function renderList(){
+  var q=(document.getElementById('search-input').value||'').toLowerCase().trim();
+  var visible=LOCATIONS.filter(function(d){
+    if(!activeFilters[d.tipas])return false;
+    if(!q)return true;
+    return [d.addr,d.miestas,d.sav,d.tipas,d.skyrius,d.atsakingas,d.info].some(function(s){
+      return s&&s.toLowerCase().indexOf(q)>=0;
     });
   });
+  document.getElementById('side-count').textContent=visible.length+' vietų';
 
-  document.getElementById('side-count').textContent = visible.length + ' vietų';
-
-  var html = visible.map(function(d) {
-    var col = tipColor(d.tipas);
-    var label = d.addr.length>28 ? d.addr.substring(0,27)+'…' : d.addr;
+  var html=visible.map(function(d){
+    var col=tipColor(d.tipas);
+    var label=d.addr.length>27?d.addr.substring(0,26)+'…':d.addr;
     return '<div class="loc-row" onclick="flyTo('+d.lat+','+d.lng+')">'
       +'<div class="loc-name">'
-      +'<span class="loc-badge" style="background:'+col+'">'+tipLabel(d.tipas).substring(0,1)+'</span>'
+      +'<span class="loc-badge" style="background:'+col+'">'+(d.tipas?d.tipas.substring(0,1):'N')+'</span>'
       +label+'</div>'
-      +'<div class="loc-sub">'+d.miestas+(d.sav?' · '+d.sav.replace(' sav.',''):'')+'</div>'
-      +(d.info?'<div class="loc-sub" style="color:#B0BEC5">'+d.info+'</div>':'')
+      +(d.skyrius?'<div class="loc-sub">'+d.regionas+' · '+d.skyrius+'</div>':'')
       +'</div>';
   }).join('');
 
-  document.getElementById('side-list').innerHTML = html ||
+  document.getElementById('side-list').innerHTML=html||
     '<div style="padding:20px;text-align:center;color:#B0BEC5;font-size:12px">Nieko nerasta</div>';
 
-  document.getElementById('side-footer').textContent =
-    'Iš viso: '+LOCATIONS.length+' vietų · '
-    +[...new Set(LOCATIONS.map(function(d){return d.miestas;}))].length+' miestų';
+  var miestai=[...new Set(LOCATIONS.map(function(d){return d.miestas;}))].length;
+  document.getElementById('side-footer').textContent=
+    'Iš viso: '+LOCATIONS.length+' vietų · '+miestai+' miestų';
 }
 
-function flyTo(lat, lng) {
-  map.flyTo([lat, lng], 15, { duration: 0.8 });
-  showTab('map');
-}
+function flyTo(lat,lng){ map.flyTo([lat,lng],15,{duration:0.8}); }
 
-function showTab(t) {
-  // Just refocus map if needed
-  setTimeout(function(){ map.invalidateSize(); }, 10);
-}
-
-// Legend
-function renderLegend() {
-  var counts = {};
-  LOCATIONS.forEach(function(d){ counts[d.tipas]=(counts[d.tipas]||0)+1; });
-  var html = '<div class="leg-title">Sutartiniai ženklai</div>';
-  allTypes.filter(function(t){ return counts[t]>0; }).forEach(function(t) {
-    html += '<div class="leg-row"><div class="leg-dot" style="background:'+tipColor(t)+'"></div>'+tipLabel(t)+'</div>';
+// ── Legenda ────────────────────────────────────────────────────────────────
+function renderLegend(){
+  var counts={};
+  LOCATIONS.forEach(function(d){counts[d.tipas]=(counts[d.tipas]||0)+1;});
+  var html='<div class="leg-title">Sutartiniai ženklai</div>';
+  Object.keys(TYPE_CFG).filter(function(t){return counts[t]>0;}).forEach(function(t){
+    html+='<div class="leg-row"><div class="leg-dot" style="background:'+tipColor(t)+'"></div>'+tipLabel(t)+'</div>';
   });
-  document.getElementById('leg').innerHTML = html;
+  document.getElementById('leg').innerHTML=html;
 }
 
 renderMap();
