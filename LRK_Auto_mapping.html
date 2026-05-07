@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8">
+<title>LRK Transporto Žemėlapis</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"/>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #F4F6F8; color: #2C3E50; height: 100vh; display: flex; flex-direction: column; }
+
+header { background: #2C3E50; color: white; padding: 0.65rem 1.4rem; display: flex; align-items: center; gap: 1rem; flex-shrink: 0; }
+.logo { background: #C0392B; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+header h1 { font-size: 14px; font-weight: 600; }
+header p  { font-size: 11px; opacity: 0.55; }
+.hdr-meta { margin-left: auto; font-size: 11px; opacity: 0.6; text-align: right; line-height: 1.5; }
+
+.content { flex: 1; display: flex; overflow: hidden; }
+#map-panel { flex: 1; position: relative; }
+#map { width: 100%; height: 100%; }
+
+.filter-bar { position: absolute; top: 10px; left: 54px; z-index: 1000; display: flex; gap: 5px; flex-wrap: wrap; max-width: 70%; }
+.flt-btn { padding: 5px 13px; border-radius: 20px; border: 2px solid; cursor: pointer; font-size: 11px; font-weight: 600; background: white; box-shadow: 0 1px 5px rgba(0,0,0,0.12); transition: all .15s; display: flex; align-items: center; gap: 5px; }
+.flt-btn .fd { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.flt-btn.on  { color: white; }
+.flt-btn.off { opacity: 0.38; }
+
+.map-summary { position: absolute; top: 12px; right: 12px; z-index: 1000; background: white; border-radius: 10px; padding: 10px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); font-size: 12px; min-width: 175px; }
+.sum-title { font-size: 10px; text-transform: uppercase; color: #90A4AE; letter-spacing: .06em; margin-bottom: 6px; font-weight: 600; }
+.sum-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 0.5px solid #F0F2F4; gap: 8px; }
+.sum-row:last-child { border-bottom: none; font-weight: 700; }
+.sum-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.sum-val { font-weight: 600; }
+
+.map-legend { position: absolute; bottom: 24px; left: 12px; z-index: 1000; background: white; border-radius: 10px; padding: 10px 14px; box-shadow: 0 2px 12px rgba(0,0,0,0.12); font-size: 11px; }
+.leg-title { font-size: 10px; text-transform: uppercase; color: #90A4AE; letter-spacing: .06em; margin-bottom: 6px; font-weight: 600; }
+.leg-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.leg-icon { width: 20px; height: 14px; border-radius: 3px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; }
+
+#side-panel { width: 270px; flex-shrink: 0; background: white; border-left: 1px solid #E0E4E8; display: flex; flex-direction: column; overflow: hidden; }
+.side-title { padding: 12px 16px 8px; border-bottom: 1px solid #E8ECF0; flex-shrink: 0; }
+.side-title h2 { font-size: 13px; font-weight: 600; }
+.side-title p  { font-size: 11px; color: #90A4AE; margin-top: 2px; }
+.side-search { padding: 8px 12px; border-bottom: 1px solid #E8ECF0; flex-shrink: 0; }
+.side-search input { width: 100%; padding: 5px 9px; border: 1px solid #DDE1E7; border-radius: 6px; font-size: 12px; outline: none; }
+.side-search input:focus { border-color: #2C3E50; }
+.side-scroll { flex: 1; overflow-y: auto; }
+
+.car-row { padding: 8px 14px; border-bottom: 0.5px solid #F5F5F5; cursor: pointer; }
+.car-row:hover { background: #F8F9FA; }
+.car-top { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; }
+.car-icon { font-size: 14px; flex-shrink: 0; }
+.car-model { font-size: 12px; font-weight: 600; color: #2C3E50; flex: 1; }
+.car-num { font-size: 10px; background: #ECEFF1; color: #546E7A; padding: 1px 6px; border-radius: 3px; font-family: monospace; }
+.car-sub { font-size: 11px; color: #90A4AE; padding-left: 21px; }
+.cat-badge { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; font-weight: 700; }
+
+.side-footer { padding: 8px 14px; border-top: 1px solid #E8ECF0; font-size: 10px; color: #B0BEC5; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🚗</div>
+  <div>
+    <h1>LRK Transporto Žemėlapis</h1>
+    <p>Transporto priemonės pagal tipą ir buvimo vietą</p>
+  </div>
+  <div class="hdr-meta">Atnaujinta: 2026-05-07<br>Šaltinis: Auto.xlsx</div>
+</header>
+
+<div class="content">
+  <div id="map-panel">
+    <div id="map"></div>
+    <div class="filter-bar" id="filter-bar"></div>
+    <div class="map-summary" id="sum"></div>
+    <div class="map-legend" id="leg"></div>
+  </div>
+
+  <div id="side-panel">
+    <div class="side-title">
+      <h2>Transporto sąrašas</h2>
+      <p id="side-count">—</p>
+    </div>
+    <div class="side-search">
+      <input type="text" id="search-input" placeholder="Ieškoti modelio, numerių, vietos..." oninput="filterList()">
+    </div>
+    <div class="side-scroll" id="side-list"></div>
+    <div class="side-footer" id="side-footer"></div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+<script>
+
+// ══════════════════════════════════════════════════════════════════════════
+// DUOMENYS
+// ══════════════════════════════════════════════════════════════════════════
+var AUTOS = [
+  {skyrius:"Skyrius",       vieta:"Raseiniai", modelis:"Wolswagen Transporter", nr:"KNS922", nuoma:"Nuosavybė", atsakingas:"Alma",                          kategorija:"B",    lat:55.381, lng:23.118},
+  {skyrius:"PIM",           vieta:"Vilnius",   modelis:"Toyota Corolla",        nr:"MAB848", nuoma:"Nuoma",     atsakingas:"Viktor",                         kategorija:"B",    lat:54.695, lng:25.275},
+  {skyrius:"Skyrius",       vieta:"Ukmergė",   modelis:"Toyota Corolla",        nr:"MJR058", nuoma:"Nuoma",     atsakingas:"Jolita Cironkienė",              kategorija:"B",    lat:55.239, lng:24.755},
+  {skyrius:"Skyrius",       vieta:"Alytus",    modelis:"Ford Focus",            nr:"TAU999", nuoma:"Nuoma",     atsakingas:"Edita Kudrauskienė",             kategorija:"B",    lat:54.402, lng:23.857},
+  {skyrius:"Klaipėda",      vieta:"Kaunas",    modelis:"Toyota Corolla",        nr:"MJP857", nuoma:"Nuoma",     atsakingas:"Lėšų pritraukimo dep., Kaunas",  kategorija:"B",    lat:54.905, lng:23.958},
+  {skyrius:"Logistika",     vieta:"Vilnius",   modelis:"WV Caravelle",          nr:"KNL362", nuoma:"Nuosavybė", atsakingas:"Rigobertas Lapeika",             kategorija:"B",    lat:54.682, lng:25.268},
+  {skyrius:"Skyrius ir KESV",vieta:"Kaunas",   modelis:"Dacia Jogger",          nr:"MFI491", nuoma:"Nuosavybė", atsakingas:"Diana Vybornonienė",             kategorija:"B",    lat:54.912, lng:23.940},
+  {skyrius:"Skyrius",       vieta:"Kaunas",    modelis:"Ford Transit",          nr:"NBH936", nuoma:"Nuosavybė", atsakingas:"Skaistė Čiurlytė",              kategorija:"B/C1", lat:54.919, lng:23.947},
+  {skyrius:"Skyrius",       vieta:"Šiauliai",  modelis:"Peugeot Berlina",       nr:"MSL760", nuoma:"Nuoma",     atsakingas:"Aistė Žalevičienė",             kategorija:"B",    lat:55.930, lng:23.320},
+  {skyrius:"Integracija",   vieta:"Vilnius",   modelis:"KIA CEED",              nr:"NEH326", nuoma:"Nuoma",     atsakingas:"Jurgita Jagminaitė",             kategorija:"B",    lat:54.700, lng:25.285},
+  {skyrius:"Integracija",   vieta:"Alytus",    modelis:"Toyota Corolla",        nr:"NHR237", nuoma:"Nuoma",     atsakingas:"Neringa Zablackienė",            kategorija:"B",    lat:54.396, lng:23.862},
+  {skyrius:"Logistika",     vieta:"Kėdainiai", modelis:"Mercedes Sprinter",     nr:"NHJ419", nuoma:"Nuosavybė", atsakingas:"Rigobertas Lapeika",             kategorija:"C1",   lat:55.288, lng:23.977},
+  {skyrius:"Logistika",     vieta:"Vilnius",   modelis:"Iveco Daily",           nr:"NLP540", nuoma:"Nuosavybė", atsakingas:"Rigobertas Lapeika",             kategorija:"C1",   lat:54.677, lng:25.262},
+  {skyrius:"Skyrius",       vieta:"Klaipėda",  modelis:"Toyota Corolla",        nr:"NHR235", nuoma:"Nuoma",     atsakingas:"Valdomė Gedminė",               kategorija:"B",    lat:55.698, lng:21.155},
+  {skyrius:"Tinklo vadovė", vieta:"Kaunas",    modelis:"Toyota RAV4",           nr:"MAA938", nuoma:"Nuoma",     atsakingas:"Toma",                           kategorija:"B",    lat:54.893, lng:23.932},
+  {skyrius:"Skyrius ir KESV",vieta:"Vilnius",  modelis:"Toyota Proace",         nr:"NML162", nuoma:"Nuosavybė", atsakingas:"",                               kategorija:"B",    lat:54.672, lng:25.258},
+  {skyrius:"Skyrius ir KESV",vieta:"Klaipėda", modelis:"Toyota Proace",         nr:"NML149", nuoma:"Nuosavybė", atsakingas:"Valdonė Gedminė",               kategorija:"B",    lat:55.710, lng:21.165},
+  {skyrius:"Skyrius ir KESV",vieta:"Kaunas",   modelis:"Toyota Proace",         nr:"NMB617", nuoma:"Nuosavybė", atsakingas:"",                               kategorija:"B",    lat:54.925, lng:23.955},
+  {skyrius:"Skyrius ir KESV",vieta:"Šiauliai", modelis:"Toyota Proace",         nr:"NML153", nuoma:"Nuosavybė", atsakingas:"Aistė Žalevičienė",             kategorija:"B",    lat:55.920, lng:23.306},
+  {skyrius:"Skyrius ir KESV",vieta:"Panevėžys",modelis:"Toyota Proace",         nr:"NNF785", nuoma:"Nuosavybė", atsakingas:"Aistė Žalevičienė",             kategorija:"B",    lat:55.735, lng:24.354},
+  {skyrius:"Skyrius ir KESV",vieta:"Vilnius",  modelis:"Toyota Proace",         nr:"NNF788", nuoma:"Nuosavybė", atsakingas:"",                               kategorija:"B",    lat:54.665, lng:25.250},
+];
+
+// Tipai pagal modelį
+var TIPAI = {
+  "Toyota Corolla":       {tipas:"Lengvasis",  ikona:"🚗", color:"#1565C0"},
+  "KIA CEED":             {tipas:"Lengvasis",  ikona:"🚗", color:"#1565C0"},
+  "Ford Focus":           {tipas:"Lengvasis",  ikona:"🚗", color:"#1565C0"},
+  "Toyota RAV4":          {tipas:"Lengvasis",  ikona:"🚙", color:"#1565C0"},
+  "Dacia Jogger":         {tipas:"MPV",        ikona:"🚙", color:"#6A1B9A"},
+  "WV Caravelle":         {tipas:"Mikroautobusas", ikona:"🚐", color:"#2E7D32"},
+  "Wolswagen Transporter":{tipas:"Mikroautobusas", ikona:"🚐", color:"#2E7D32"},
+  "Toyota Proace":        {tipas:"Mikroautobusas", ikona:"🚐", color:"#2E7D32"},
+  "Ford Transit":         {tipas:"Furgonas",   ikona:"🚚", color:"#E65100"},
+  "Peugeot Berlina":      {tipas:"Lengvasis",  ikona:"🚗", color:"#1565C0"},
+  "Mercedes Sprinter":    {tipas:"Krovininis", ikona:"🚛", color:"#B71C1C"},
+  "Iveco Daily":          {tipas:"Krovininis", ikona:"🚛", color:"#B71C1C"},
+};
+
+function getTipas(m){ return (TIPAI[m]||{tipas:"Kita",ikona:"🚗",color:"#546E7A"}); }
+
+// Unikalūs tipai
+var VISI_TIPAI = ["Lengvasis","MPV","Mikroautobusas","Furgonas","Krovininis"];
+var TIPO_COLOR = {
+  "Lengvasis":      "#1565C0",
+  "MPV":            "#6A1B9A",
+  "Mikroautobusas": "#2E7D32",
+  "Furgonas":       "#E65100",
+  "Krovininis":     "#B71C1C",
+};
+
+// ── Žemėlapis ─────────────────────────────────────────────────────────────
+var map = L.map('map').setView([55.17, 23.88], 7);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution:'© OpenStreetMap © CartoDB'
+}).addTo(map);
+
+var cluster = L.markerClusterGroup({spiderfyOnMaxZoom:true,showCoverageOnHover:false,zoomToBoundsOnClick:true});
+map.addLayer(cluster);
+
+function makeIcon(color, ikona){
+  var svg = '<div style="background:'+color+';border:2px solid white;border-radius:6px;width:26px;height:26px;'
+    +'display:flex;align-items:center;justify-content:center;font-size:14px;'
+    +'box-shadow:0 1px 4px rgba(0,0,0,0.25)">'+ikona+'</div>';
+  return L.divIcon({className:'',html:svg,iconSize:[26,26],iconAnchor:[13,13],popupAnchor:[0,-13]});
+}
+
+// Filtrai
+var activeFilters = {};
+VISI_TIPAI.forEach(function(t){ activeFilters[t]=true; });
+
+function renderFilterBar(){
+  var counts={};
+  VISI_TIPAI.forEach(function(t){counts[t]=0;});
+  AUTOS.forEach(function(a){ var t=getTipas(a.modelis).tipas; counts[t]=(counts[t]||0)+1; });
+  var fb=document.getElementById('filter-bar');
+  fb.innerHTML=VISI_TIPAI.filter(function(t){return counts[t]>0;}).map(function(t){
+    var c=TIPO_COLOR[t], on=activeFilters[t];
+    return '<button class="flt-btn '+(on?'on':'off')+'" '
+      +'style="border-color:'+c+';'+(on?'background:'+c:'color:'+c)+'" '
+      +'onclick="toggleF(\''+t+'\')">'
+      +'<span class="fd" style="background:'+(on?'white':c)+'"></span>'
+      +t+' ('+counts[t]+')'
+      +'</button>';
+  }).join('');
+}
+
+function toggleF(t){
+  var on=Object.keys(activeFilters).filter(function(k){return activeFilters[k];});
+  if(activeFilters[t]&&on.length<=1)return;
+  activeFilters[t]=!activeFilters[t];
+  renderMap();
+}
+
+function renderMap(){
+  cluster.clearLayers();
+  renderFilterBar();
+  var counts={};
+  VISI_TIPAI.forEach(function(t){counts[t]=0;});
+
+  AUTOS.forEach(function(a){
+    var tp=getTipas(a.modelis);
+    if(!activeFilters[tp.tipas])return;
+    counts[tp.tipas]=(counts[tp.tipas]||0)+1;
+
+    var katColor = a.kategorija==='C1'?'#E65100':a.kategorija==='B/C1'?'#F57F17':'#2E7D32';
+    var m=L.marker([a.lat,a.lng],{icon:makeIcon(tp.color,tp.ikona)});
+    var popup='<div style="font-family:Segoe UI,Arial,sans-serif;min-width:210px">'
+      +'<div style="font-weight:700;font-size:13px;margin-bottom:4px">'+a.modelis+'</div>'
+      +'<div style="font-size:12px;color:#546E7A;margin-bottom:6px">'+a.nr+'</div>'
+      +'<div style="font-size:11px;margin-bottom:2px">📍 '+a.vieta+'</div>'
+      +'<div style="font-size:11px;margin-bottom:2px">🏢 '+a.skyrius+'</div>'
+      +(a.atsakingas?'<div style="font-size:11px;margin-bottom:5px">👤 '+a.atsakingas+'</div>':'')
+      +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">'
+      +'<span style="background:'+tp.color+';color:white;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700">'+tp.tipas+'</span>'
+      +'<span style="background:'+katColor+';color:white;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700">Kat. '+a.kategorija+'</span>'
+      +'<span style="background:'+(a.nuoma==='Nuosavybė'?'#1B5E20':'#0D47A1')+';color:white;padding:2px 7px;border-radius:4px;font-size:10px">'+a.nuoma+'</span>'
+      +'</div></div>';
+    m.bindPopup(popup);
+    cluster.addLayer(m);
+  });
+
+  var html='<div class="sum-title">Suvestinė</div>';
+  VISI_TIPAI.forEach(function(t){
+    if(!counts[t])return;
+    html+='<div class="sum-row"><span class="sum-dot" style="background:'+TIPO_COLOR[t]+'"></span>'
+      +'<span style="flex:1;color:#546E7A">'+t+'</span><span class="sum-val">'+counts[t]+'</span></div>';
+  });
+  var total=Object.values(counts).reduce(function(a,b){return a+b;},0);
+  html+='<div class="sum-row" style="margin-top:4px;padding-top:4px;border-top:1px solid #eee;font-weight:700">'
+    +'<span style="flex:1">Iš viso</span><span class="sum-val">'+total+'</span></div>';
+  document.getElementById('sum').innerHTML=html;
+
+  renderList();
+}
+
+// Legenda
+function renderLegend(){
+  var html='<div class="leg-title">Transporto tipas</div>';
+  VISI_TIPAI.forEach(function(t){
+    var ikona = t==='Lengvasis'?'🚗':t==='MPV'?'🚙':t==='Mikroautobusas'?'🚐':t==='Furgonas'?'🚚':'🚛';
+    html+='<div class="leg-row"><div class="leg-icon" style="background:'+TIPO_COLOR[t]+';border-radius:4px;color:white">'+ikona+'</div>'+t+'</div>';
+  });
+  html+='<div style="margin-top:8px;padding-top:6px;border-top:1px solid #eee;font-size:10px;color:#90A4AE;font-weight:600">VAIRUOTOJO TEISĖS</div>';
+  [['B','#2E7D32'],['B/C1','#F57F17'],['C1','#E65100']].forEach(function(x){
+    html+='<div class="leg-row"><div style="background:'+x[1]+';color:white;border-radius:3px;padding:1px 6px;font-size:10px;font-weight:700">'+x[0]+'</div>'
+      +(x[0]==='B'?'Standartinės':x[0]==='C1'?'Sunkesnis furgonas':'Tikslinti')+'</div>';
+  });
+  document.getElementById('leg').innerHTML=html;
+}
+
+// Sąrašas
+function filterList(){ renderList(); }
+
+function renderList(){
+  var q=(document.getElementById('search-input').value||'').toLowerCase().trim();
+  var visible=AUTOS.filter(function(a){
+    var tp=getTipas(a.modelis).tipas;
+    if(!activeFilters[tp])return false;
+    if(!q)return true;
+    return [a.modelis,a.nr,a.vieta,a.skyrius,a.atsakingas,a.kategorija].some(function(s){
+      return s&&s.toLowerCase().indexOf(q)>=0;
+    });
+  });
+  document.getElementById('side-count').textContent=visible.length+' transporto priemonių';
+
+  var html=visible.map(function(a){
+    var tp=getTipas(a.modelis);
+    var katColor=a.kategorija==='C1'?'#E65100':a.kategorija==='B/C1'?'#F57F17':'#1B5E20';
+    return '<div class="car-row" onclick="flyTo('+a.lat+','+a.lng+')">'
+      +'<div class="car-top">'
+      +'<span class="car-icon">'+tp.ikona+'</span>'
+      +'<span class="car-model">'+a.modelis+'</span>'
+      +'<span class="car-num">'+a.nr+'</span>'
+      +'</div>'
+      +'<div class="car-sub">'+a.vieta+' · '+a.skyrius+'</div>'
+      +'<div style="padding-left:21px;margin-top:3px;display:flex;gap:4px">'
+      +'<span class="cat-badge" style="background:'+tp.color+';color:white">'+tp.tipas+'</span>'
+      +'<span class="cat-badge" style="background:'+katColor+';color:white">Kat. '+a.kategorija+'</span>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+
+  document.getElementById('side-list').innerHTML=html||
+    '<div style="padding:20px;text-align:center;color:#B0BEC5;font-size:12px">Nieko nerasta</div>';
+
+  var nuosavybe=AUTOS.filter(function(a){return a.nuoma==='Nuosavybė';}).length;
+  document.getElementById('side-footer').textContent=
+    'Iš viso: '+AUTOS.length+' transporto priemonių · '+nuosavybe+' nuosavybė · '+(AUTOS.length-nuosavybe)+' nuoma';
+}
+
+function flyTo(lat,lng){ map.flyTo([lat,lng],14,{duration:0.8}); }
+
+renderMap();
+renderLegend();
+</script>
+</body>
+</html>
