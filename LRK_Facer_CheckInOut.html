@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>LRK · Facer Check-IN/OUT</title>
+<style>
+:root {
+  --red:#c0392b; --red-dark:#922b21;
+  --green:#27ae60; --green-dark:#1e8449;
+  --blue:#2980b9; --gray:#7f8c8d;
+  --bg:#f5f6fa; --surface:#fff;
+  --ink:#2c3e50; --ink2:#555;
+  --border:#dde1ec;
+  --radius:14px;
+}
+* { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+body {
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system, 'Segoe UI', sans-serif;
+  font-size:16px; line-height:1.5;
+  min-height:100vh; padding-bottom:40px;
+}
+
+/* ── Header ── */
+.header {
+  background:var(--red); color:#fff;
+  padding:18px 20px 14px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.header h1 { font-size:18px; font-weight:700; }
+.header-sub { font-size:12px; opacity:0.8; margin-top:2px; }
+.btn-reset {
+  background:rgba(255,255,255,0.2); border:none; color:#fff;
+  font-size:11px; padding:5px 10px; border-radius:20px; cursor:pointer;
+}
+
+/* ── Setup screen ── */
+.screen { display:none; padding:20px; max-width:480px; margin:0 auto; }
+.screen.active { display:block; }
+
+.card {
+  background:var(--surface); border-radius:var(--radius);
+  padding:22px; margin-bottom:16px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.06);
+}
+.card h2 {
+  font-size:16px; font-weight:700; color:var(--ink);
+  margin-bottom:16px; display:flex; align-items:center; gap:8px;
+}
+
+label {
+  display:block; font-size:13px; font-weight:600;
+  color:var(--ink2); margin-bottom:6px;
+}
+input, select {
+  width:100%; padding:12px 14px;
+  border:1.5px solid var(--border); border-radius:10px;
+  font-size:16px; color:var(--ink); background:#fff;
+  margin-bottom:14px; appearance:none;
+  -webkit-appearance:none;
+}
+input:focus, select:focus {
+  outline:none; border-color:var(--red);
+}
+
+/* ── Big action button ── */
+.btn-main {
+  width:100%; padding:18px;
+  font-size:18px; font-weight:700;
+  border:none; border-radius:var(--radius);
+  cursor:pointer; letter-spacing:0.5px;
+  transition:transform 0.1s, opacity 0.1s;
+  display:flex; align-items:center; justify-content:center; gap:10px;
+}
+.btn-main:active { transform:scale(0.97); opacity:0.9; }
+.btn-main.checkin  { background:var(--green); color:#fff; }
+.btn-main.checkout { background:var(--red);   color:#fff; }
+.btn-main.inactive { background:#bdc3c7; color:#fff; pointer-events:none; }
+
+.btn-secondary {
+  width:100%; padding:14px;
+  font-size:15px; font-weight:600;
+  border:1.5px solid var(--border); border-radius:var(--radius);
+  background:#fff; color:var(--ink2); cursor:pointer;
+  margin-top:10px;
+}
+
+/* ── Status card ── */
+.status-badge {
+  display:inline-block; padding:6px 14px; border-radius:20px;
+  font-size:13px; font-weight:700;
+}
+.status-in  { background:#d5f5e3; color:#1e8449; }
+.status-out { background:#fadbd8; color:#922b21; }
+.status-none{ background:#f2f3f4; color:#7f8c8d; }
+
+.info-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 0; border-bottom:1px solid var(--border); font-size:14px;
+}
+.info-row:last-child { border-bottom:none; }
+.info-label { color:var(--gray); }
+.info-val   { font-weight:600; text-align:right; }
+
+/* ── GPS indicator ── */
+.gps-row {
+  display:flex; align-items:center; gap:8px;
+  padding:10px 14px; border-radius:10px;
+  font-size:13px; font-weight:600; margin-bottom:14px;
+}
+.gps-ok      { background:#d5f5e3; color:#1e8449; }
+.gps-warn    { background:#fdebd0; color:#d35400; }
+.gps-error   { background:#fadbd8; color:#922b21; }
+.gps-loading { background:#f2f3f4; color:#7f8c8d; }
+.gps-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.gps-ok .gps-dot      { background:#27ae60; }
+.gps-warn .gps-dot    { background:#e67e22; }
+.gps-error .gps-dot   { background:#e74c3c; }
+.gps-loading .gps-dot { background:#95a5a6; animation:pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* ── Time display ── */
+.time-big {
+  font-size:48px; font-weight:700; text-align:center;
+  color:var(--ink); letter-spacing:-1px;
+  margin:8px 0 4px;
+}
+.date-small {
+  font-size:14px; color:var(--gray); text-align:center; margin-bottom:16px;
+}
+
+/* ── Log ── */
+.log-entry {
+  padding:12px 0; border-bottom:1px solid var(--border);
+  display:flex; justify-content:space-between; align-items:flex-start;
+  font-size:13px;
+}
+.log-entry:last-child { border-bottom:none; }
+.log-type { font-weight:700; }
+.log-in  { color:var(--green); }
+.log-out { color:var(--red); }
+.log-time { color:var(--gray); font-size:12px; margin-top:2px; }
+
+/* ── Alert ── */
+.alert {
+  padding:14px 16px; border-radius:10px;
+  font-size:14px; font-weight:600; margin-bottom:14px;
+  display:none;
+}
+.alert.show { display:block; }
+.alert-err  { background:#fadbd8; color:#922b21; border:1px solid #f1948a; }
+.alert-ok   { background:#d5f5e3; color:#1e8449; border:1px solid #82e0aa; }
+
+.spinner {
+  display:inline-block; width:18px; height:18px;
+  border:3px solid rgba(255,255,255,0.4);
+  border-top-color:#fff; border-radius:50%;
+  animation:spin 0.8s linear infinite; vertical-align:middle;
+}
+@keyframes spin { to{ transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>🔴 LRK Facer'iai</h1>
+    <div class="header-sub">Check-IN / Check-OUT</div>
+  </div>
+  <button class="btn-reset" onclick="resetApp()">Keisti vartotoją</button>
+</div>
+
+<!-- ══ SETUP SCREEN ══ -->
+<div id="screen-setup" class="screen active">
+  <div class="card">
+    <h2>👤 Pirmas prisijungimas</h2>
+    <label>Facer ID (pvz. 111133)</label>
+    <input type="number" id="setup-id" placeholder="111XXX" inputmode="numeric">
+    <label>Vardas Pavardė</label>
+    <input type="text" id="setup-name" placeholder="Vardas Pavardė">
+    <button class="btn-main checkin" onclick="saveSetup()">Išsaugoti ir tęsti →</button>
+  </div>
+  <div style="text-align:center;font-size:13px;color:var(--gray);margin-top:8px">
+    Šie duomenys išsaugomi tik šiame telefone
+  </div>
+</div>
+
+<!-- ══ MAIN SCREEN ══ -->
+<div id="screen-main" class="screen">
+
+  <!-- User info -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="font-size:18px;font-weight:700" id="main-name">—</div>
+        <div style="font-size:13px;color:var(--gray)" id="main-id">ID: —</div>
+      </div>
+      <div id="main-status-badge" class="status-badge status-none">Laukia</div>
+    </div>
+
+    <!-- Clock -->
+    <div class="time-big" id="clock">—</div>
+    <div class="date-small" id="dateline">—</div>
+
+    <!-- GPS -->
+    <div class="gps-row gps-loading" id="gps-row">
+      <div class="gps-dot"></div>
+      <span id="gps-text">Nustatoma lokacija...</span>
+    </div>
+
+    <!-- Alert -->
+    <div class="alert" id="alert"></div>
+
+    <!-- Main button -->
+    <button class="btn-main inactive" id="btn-action" onclick="doCheckAction()">
+      <span id="btn-text">⏳ Laukiama GPS...</span>
+    </button>
+  </div>
+
+  <!-- Last action -->
+  <div class="card" id="card-last" style="display:none">
+    <h2>📋 Paskutinis veiksmas</h2>
+    <div id="last-info"></div>
+  </div>
+
+  <!-- Log -->
+  <div class="card">
+    <h2>📅 Šios dienos log'as</h2>
+    <div id="log-list" style="font-size:13px;color:var(--gray)">Dar nėra įrašų šiandien</div>
+  </div>
+
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────
+var SHEET_URL = 'https://script.google.com/macros/s/PASTE_YOUR_APPS_SCRIPT_URL_HERE/exec';
+var GPS_RADIUS_M = 500;
+var DAYS_LT = ['Sekm','Pirm','Antr','Treč','Ketv','Penkt','Šešt'];
+var MONTHS_LT = ['sausio','vasario','kovo','balandžio','gegužės','birželio',
+                 'liepos','rugpjūčio','rugsėjo','spalio','lapkričio','gruodžio'];
+
+// ── LOCATIONS ──────────────────────────────────────────────────────────────
+var LOCATIONS = [
+  {name:"Vilnius Katedros aikštė",lat:54.6861,lng:25.2798},
+  {name:"Vilnius Mamoničių g. 3 X300",lat:54.6692,lng:25.2799},
+  {name:"Vilnius Mindaugo g. 11 X097",lat:54.6895,lng:25.2704},
+  {name:"Vilnius Moravų g. 7, Kalnėnai X689",lat:54.7358,lng:25.1891},
+  {name:"Vilnius Outlet V. Pociūno g.",lat:54.6279,lng:25.1772},
+  {name:"Vilnius V. Pociūno g. 8 VILNIUS OUTLET",lat:54.6279,lng:25.1772},
+  {name:"Vilnius Ozo g. 18-1001 X777",lat:54.7128,lng:25.2715},
+  {name:"Vilnius Ozo g. 25 X555 AKROPOLIO MAXIMA",lat:54.7131,lng:25.2698},
+  {name:"Vilnius Pavilnionių g. 55 X583",lat:54.6681,lng:25.3342},
+  {name:"Vilnius Sausio 13-osios g. 2-1 X095",lat:54.6933,lng:25.2162},
+  {name:"Vilnius Tiškevičiaus g.22 X983",lat:54.7195,lng:25.2512},
+  {name:"Vilnius Ukmergės g. 282 X120",lat:54.7368,lng:25.2831},
+  {name:"Vilnius Ukmergės g. 369 X930",lat:54.7519,lng:25.2954},
+  {name:"Vilnius Verkių g. 31C OUTLET PARK",lat:54.7242,lng:25.3023},
+  {name:"Vilnius Vikingų g. 3 NORDIKA",lat:54.7065,lng:25.2118},
+  {name:"Vilnius Vilniaus g.",lat:54.6851,lng:25.2800},
+  {name:"Vilnius Vinco Kudirkos Aikštė",lat:54.6876,lng:25.2784},
+  {name:"Vilnius Žalgirio g. 105 X096",lat:54.7031,lng:25.2731},
+  {name:"Kaunas Islandijos pl. 32 MEGA",lat:54.8721,lng:23.9215},
+  {name:"Kaunas Jonavos g. 60 X590 RIVER MOLAS",lat:54.9108,lng:24.0218},
+  {name:"Kaunas K. Baršausko g. 66A X250 MOLAS",lat:54.8851,lng:23.9482},
+  {name:"Kaunas Karaliaus Mindaugo pr.49 X944",lat:54.9018,lng:23.9535},
+  {name:"Kaunas Laisvės al. 93 ir 96",lat:54.8968,lng:23.9240},
+  {name:"Kaunas Laisvės al. 93 ir 98",lat:54.8968,lng:23.9240},
+  {name:"Kaunas Laisvės al. 93 ir 95",lat:54.8968,lng:23.9240},
+  {name:"Kaunas Naujakurių g. 31 X887",lat:54.9328,lng:23.9471},
+  {name:"Kaunas Nepriklausomybės a.",lat:54.8972,lng:23.8962},
+  {name:"Kaunas Pramonės pr. 29 X350",lat:54.9211,lng:23.9018},
+  {name:"Kaunas Prie Požeminės",lat:54.8998,lng:23.9234},
+  {name:"Kaunas Raudondvario pl. 284A X928",lat:54.8611,lng:23.8754},
+  {name:"Kaunas Savanorių pr. 255 X866 HYPER MAXIMA",lat:54.8618,lng:23.9612},
+  {name:"Kaunas Skulptūra Zen triušis",lat:54.8971,lng:23.9242},
+  {name:"Kaunas T. Masiulio g. 16E X765",lat:54.9195,lng:23.9142},
+  {name:"Kaunas V. Krėvės pr. 108 X535",lat:54.8721,lng:23.9752},
+  {name:"Kaunas V. Krėvės pr. 14B X099",lat:54.9008,lng:23.9918},
+  {name:"Kaunas Veiverių g. 150B X916",lat:54.8512,lng:23.8981},
+  {name:"Kaunas Šarkuvos g. 1A X124",lat:54.9241,lng:23.9318},
+  {name:"Kaunas Šiaurės pr. 8D-1 X374",lat:54.9318,lng:23.9084},
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────
+var state = {
+  facerId: null, facerName: null,
+  isCheckedIn: false,
+  checkInTime: null,
+  currentLoc: null, currentDist: null,
+  userLat: null, userLng: null,
+  gpsReady: false,
+  nameChangedBeforeAction: false,
+  lastStoredName: null,
+  todayLog: []
+};
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  var saved = localStorage.getItem('lrk_facer');
+  if (saved) {
+    var d = JSON.parse(saved);
+    state.facerId   = d.id;
+    state.facerName = d.name;
+    state.lastStoredName = d.name;
+    var checkinSaved = localStorage.getItem('lrk_checkin');
+    if (checkinSaved) {
+      var ci = JSON.parse(checkinSaved);
+      var today = new Date().toDateString();
+      if (ci.date === today) {
+        state.isCheckedIn = true;
+        state.checkInTime = new Date(ci.time);
+      } else {
+        localStorage.removeItem('lrk_checkin');
+      }
+    }
+    loadLog();
+    showScreen('main');
+    updateMainUI();
+    startClock();
+    startGPS();
+  } else {
+    showScreen('setup');
+  }
+});
+
+// ── SCREENS ───────────────────────────────────────────────────────────────
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+function saveSetup() {
+  var id   = document.getElementById('setup-id').value.trim();
+  var name = document.getElementById('setup-name').value.trim();
+  if (!id || !name) { alert('Įveskite ID ir vardą!'); return; }
+  state.facerId   = id;
+  state.facerName = name;
+  state.lastStoredName = name;
+  localStorage.setItem('lrk_facer', JSON.stringify({id:id, name:name}));
+  showScreen('main');
+  updateMainUI();
+  startClock();
+  startGPS();
+}
+
+function resetApp() {
+  if (!confirm('Keisti vartotoją? Šiandienos check-in bus prarastas.')) return;
+  localStorage.removeItem('lrk_facer');
+  localStorage.removeItem('lrk_checkin');
+  localStorage.removeItem('lrk_log');
+  location.reload();
+}
+
+// ── CLOCK ─────────────────────────────────────────────────────────────────
+function startClock() {
+  function tick() {
+    var now = new Date();
+    var h = String(now.getHours()).padStart(2,'0');
+    var m = String(now.getMinutes()).padStart(2,'0');
+    var s = String(now.getSeconds()).padStart(2,'0');
+    document.getElementById('clock').textContent = h+':'+m+':'+s;
+    document.getElementById('dateline').textContent =
+      DAYS_LT[now.getDay()]+', '+now.getDate()+' '+MONTHS_LT[now.getMonth()]+' '+now.getFullYear();
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// ── GPS ───────────────────────────────────────────────────────────────────
+function startGPS() {
+  if (!navigator.geolocation) {
+    setGPSRow('error', '⚠ GPS nepalaikomas šiame įrenginyje');
+    return;
+  }
+  setGPSRow('loading', 'Nustatoma lokacija...');
+  navigator.geolocation.watchPosition(onGPS, onGPSError, {
+    enableHighAccuracy: true, maximumAge: 15000, timeout: 20000
+  });
+}
+
+function onGPS(pos) {
+  state.userLat = pos.coords.latitude;
+  state.userLng = pos.coords.longitude;
+  state.gpsReady = true;
+
+  // Find nearest location
+  var best = null, bestDist = Infinity;
+  LOCATIONS.forEach(function(loc) {
+    var d = haversine(state.userLat, state.userLng, loc.lat, loc.lng);
+    if (d < bestDist) { bestDist = d; best = loc; }
+  });
+  state.currentLoc  = best;
+  state.currentDist = Math.round(bestDist);
+
+  if (bestDist <= GPS_RADIUS_M) {
+    setGPSRow('ok', '📍 '+best.name+' ('+state.currentDist+'m)');
+    updateButton();
+  } else {
+    setGPSRow('warn', '⚠ Esate toli nuo lokacijos ('+state.currentDist+'m) · '+best.name);
+    setBtn('inactive', '⚠ Per toli nuo lokacijos');
+  }
+}
+
+function onGPSError(err) {
+  setGPSRow('error', '⚠ GPS klaida: '+err.message);
+  // Allow action anyway but mark GPS as failed
+  state.gpsReady = false;
+  state.currentLoc = {name:'GPS nepasiekiamas'};
+  state.currentDist = null;
+  updateButton();
+}
+
+function setGPSRow(type, text) {
+  var el = document.getElementById('gps-row');
+  el.className = 'gps-row gps-'+type;
+  document.getElementById('gps-text').textContent = text;
+}
+
+// ── DISTANCE ──────────────────────────────────────────────────────────────
+function haversine(lat1, lng1, lat2, lng2) {
+  var R = 6371000;
+  var dLat = (lat2-lat1)*Math.PI/180;
+  var dLng = (lng2-lng1)*Math.PI/180;
+  var a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+          Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+          Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+// ── UI ────────────────────────────────────────────────────────────────────
+function updateMainUI() {
+  document.getElementById('main-name').textContent = state.facerName;
+  document.getElementById('main-id').textContent   = 'ID: '+state.facerId;
+  var badge = document.getElementById('main-status-badge');
+  if (state.isCheckedIn) {
+    badge.textContent = '✅ Check-IN';
+    badge.className = 'status-badge status-in';
+  } else {
+    badge.textContent = '⬜ Ne darbe';
+    badge.className = 'status-badge status-none';
+  }
+}
+
+function updateButton() {
+  if (!state.gpsReady && state.currentLoc === null) return;
+  if (state.isCheckedIn) {
+    setBtn('checkout', '⬛ CHECK-OUT');
+  } else {
+    setBtn('checkin', '✅ CHECK-IN');
+  }
+}
+
+function setBtn(type, text) {
+  var btn = document.getElementById('btn-action');
+  btn.className = 'btn-main '+type;
+  document.getElementById('btn-text').innerHTML = text;
+}
+
+// ── ACTION ────────────────────────────────────────────────────────────────
+function doCheckAction() {
+  var btn = document.getElementById('btn-action');
+  if (btn.classList.contains('inactive')) return;
+
+  // Check if name was changed since last save
+  var savedData = localStorage.getItem('lrk_facer');
+  var savedName = savedData ? JSON.parse(savedData).name : state.facerName;
+  var nameChanged = (state.facerName !== savedName) || (state.facerName !== state.lastStoredName);
+
+  hideAlert();
+  setBtn('inactive', '<span class="spinner"></span> Siunčiama...');
+
+  var action = state.isCheckedIn ? 'Check-OUT' : 'Check-IN';
+  var now    = new Date();
+  var locName = state.currentLoc ? state.currentLoc.name : 'GPS nepasiekiamas';
+  var dist   = state.currentDist !== null ? state.currentDist+'m' : '?';
+  var gpsCoords = state.userLat ? state.userLat.toFixed(5)+','+state.userLng.toFixed(5) : 'N/A';
+
+  var payload = {
+    action:      action,
+    facerId:     state.facerId,
+    facerName:   state.facerName,
+    timestamp:   now.toISOString(),
+    location:    locName,
+    gpsCoords:   gpsCoords,
+    distanceM:   dist,
+    nameChanged: nameChanged ? 'TAIP' : 'ne'
+  };
+
+  // Send to Google Sheet
+  sendToSheet(payload, function(ok) {
+    if (ok) {
+      // Update state
+      if (action === 'Check-IN') {
+        state.isCheckedIn = true;
+        state.checkInTime = now;
+        localStorage.setItem('lrk_checkin', JSON.stringify({
+          date: now.toDateString(), time: now.toISOString()
+        }));
+        showAlert('ok', '✅ Check-IN užfiksuotas! '+formatTime(now));
+      } else {
+        state.isCheckedIn = false;
+        localStorage.removeItem('lrk_checkin');
+        var dur = state.checkInTime ? duration(state.checkInTime, now) : '—';
+        showAlert('ok', '⬛ Check-OUT užfiksuotas! Darbo laikas: '+dur);
+      }
+      state.lastStoredName = state.facerName;
+      // Add to log
+      addToLog({action:action, time:now, location:locName});
+      updateMainUI();
+      updateButton();
+      showLastAction(action, now, locName, nameChanged);
+    } else {
+      showAlert('err', '❌ Klaida siunčiant. Patikrinkite internetą ir bandykite dar kartą.');
+      updateButton();
+    }
+  });
+}
+
+// ── SHEET SEND ────────────────────────────────────────────────────────────
+function sendToSheet(data, callback) {
+  var url = SHEET_URL + '?' + Object.keys(data).map(function(k) {
+    return encodeURIComponent(k)+'='+encodeURIComponent(data[k]);
+  }).join('&');
+
+  var img = new Image();
+  var done = false;
+  img.onload = img.onerror = function() {
+    if (!done) { done = true; callback(true); }
+  };
+  // Fallback timeout
+  setTimeout(function() {
+    if (!done) { done = true; callback(true); } // optimistic
+  }, 8000);
+  img.src = url;
+}
+
+// ── LOG ───────────────────────────────────────────────────────────────────
+function loadLog() {
+  var saved = localStorage.getItem('lrk_log');
+  if (!saved) return;
+  var log = JSON.parse(saved);
+  var today = new Date().toDateString();
+  state.todayLog = log.filter(function(e){ return new Date(e.time).toDateString()===today; });
+  renderLog();
+}
+
+function addToLog(entry) {
+  state.todayLog.push(entry);
+  var allLog = [];
+  try { allLog = JSON.parse(localStorage.getItem('lrk_log')||'[]'); } catch(e){}
+  allLog.push(entry);
+  // Keep last 50
+  if (allLog.length > 50) allLog = allLog.slice(-50);
+  localStorage.setItem('lrk_log', JSON.stringify(allLog));
+  renderLog();
+}
+
+function renderLog() {
+  var el = document.getElementById('log-list');
+  if (!state.todayLog.length) {
+    el.innerHTML = '<span style="color:var(--gray)">Dar nėra įrašų šiandien</span>';
+    return;
+  }
+  el.innerHTML = state.todayLog.slice().reverse().map(function(e) {
+    var t = new Date(e.time);
+    var isIn = e.action === 'Check-IN';
+    return '<div class="log-entry">'
+      +'<div>'
+      +'<div class="log-type '+(isIn?'log-in':'log-out')+'">'+(isIn?'✅ Check-IN':'⬛ Check-OUT')+'</div>'
+      +'<div class="log-time">'+e.location+'</div>'
+      +'</div>'
+      +'<div style="text-align:right">'
+      +'<div style="font-weight:600">'+formatTime(t)+'</div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ── LAST ACTION ───────────────────────────────────────────────────────────
+function showLastAction(action, time, loc, nameChanged) {
+  var card = document.getElementById('card-last');
+  var info = document.getElementById('last-info');
+  card.style.display = 'block';
+  info.innerHTML =
+    '<div class="info-row"><span class="info-label">Veiksmas</span>'
+    +'<span class="info-val '+(action==='Check-IN'?'log-in':'log-out')+'">'+action+'</span></div>'
+    +'<div class="info-row"><span class="info-label">Laikas</span>'
+    +'<span class="info-val">'+formatTime(time)+'</span></div>'
+    +'<div class="info-row"><span class="info-label">Lokacija</span>'
+    +'<span class="info-val" style="max-width:200px;text-align:right">'+loc+'</span></div>'
+    +(nameChanged?'<div class="info-row"><span class="info-label">⚠ Vardas keistas</span>'
+    +'<span class="info-val" style="color:#e74c3c">TAIP</span></div>':'');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────
+function formatTime(d) {
+  return String(d.getHours()).padStart(2,'0')+':'+
+         String(d.getMinutes()).padStart(2,'0')+':'+
+         String(d.getSeconds()).padStart(2,'0');
+}
+function duration(from, to) {
+  var ms = to - from;
+  var h  = Math.floor(ms/3600000);
+  var m  = Math.floor((ms%3600000)/60000);
+  return h+'h '+m+'min';
+}
+function showAlert(type, msg) {
+  var el = document.getElementById('alert');
+  el.className = 'alert show alert-'+type;
+  el.textContent = msg;
+}
+function hideAlert() {
+  document.getElementById('alert').className = 'alert';
+}
+</script>
+</body>
+</html>
