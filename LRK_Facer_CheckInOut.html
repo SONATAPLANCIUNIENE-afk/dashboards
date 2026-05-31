@@ -281,7 +281,7 @@ var LOCATIONS = [
   {name:"Kaunas Šarkuvos g. 1A X124",lat:54.9241,lng:23.9318},
   {name:"Kaunas Šiaurės pr. 8D-1 X374",lat:54.9318,lng:23.9084},
   // ── TESTINĖS LOKACIJOS (ištrinti po testavimo) ──
-  {name:"Vilnius Višinskio g. 24 PC Markučiai",lat:54.6733,lng:25.3065},
+  {name:"Vilnius Višinskio g. 24 PC Markučiai",lat:54.6658,lng:25.3021},
   {name:"Vilnius Rasų g. 9A Lidl RASOS",lat:54.6712,lng:25.3085},
 ];
 
@@ -559,16 +559,26 @@ function sendToSheet(data, callback) {
     return encodeURIComponent(k)+'='+encodeURIComponent(data[k]);
   }).join('&');
 
-  var img = new Image();
   var done = false;
-  img.onload = img.onerror = function() {
-    if (!done) { done = true; callback(true); }
-  };
-  // Fallback timeout
-  setTimeout(function() {
-    if (!done) { done = true; callback(true); } // optimistic
-  }, 8000);
-  img.src = url;
+  function ok() { if (!done) { done = true; callback(true); } }
+  function fail() { if (!done) { done = true; callback(false); } }
+
+  // Try fetch first (modern browsers)
+  if (typeof fetch !== 'undefined') {
+    fetch(url, { method: 'GET', mode: 'no-cors' })
+      .then(ok).catch(function() {
+        // fallback to Image if fetch fails
+        var img = new Image();
+        img.onload = img.onerror = ok;
+        img.src = url;
+      });
+  } else {
+    var img = new Image();
+    img.onload = img.onerror = ok;
+    img.src = url;
+  }
+  // Safety timeout
+  setTimeout(ok, 10000);
 }
 
 // ── LOG ───────────────────────────────────────────────────────────────────
