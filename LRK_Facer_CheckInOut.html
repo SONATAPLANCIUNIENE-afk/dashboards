@@ -177,7 +177,7 @@ input:focus, select:focus {
     <h2>👤 Pirmas prisijungimas</h2>
     <label>Facer ID (pvz. 111133)</label>
     <input type="number" id="setup-id" placeholder="111XXX" inputmode="numeric">
-    <label>Vardas P.</label>
+    <label>Vardas Pavardė</label>
     <input type="text" id="setup-name" placeholder="Vardas Pavardė">
     <button class="btn-main checkin" onclick="saveSetup()">Išsaugoti ir tęsti →</button>
   </div>
@@ -281,10 +281,39 @@ var LOCATIONS = [
   {name:"Kaunas Šarkuvos g. 1A X124",lat:54.9241,lng:23.9318},
   {name:"Kaunas Šiaurės pr. 8D-1 X374",lat:54.9318,lng:23.9084},
   // ── TESTINĖS LOKACIJOS (ištrinti po testavimo) ──
-  {name:"Vilnius Višinskio g. 24 PC Markučiai",lat:54.6742,lng:25.3048},
+  {name:"Vilnius Višinskio g. 24 PC Markučiai",lat:54.6658,lng:25.3021},
   {name:"Vilnius Rasų g. 9A Lidl RASOS",lat:54.6712,lng:25.3085},
-  {name:"Vilnius Aukštaičių g. 8 PC PAUPYS",lat:54.6778,lng:25.2985},  
 ];
+
+// ── DEVICE FINGERPRINT ───────────────────────────────────────────────────────
+function getDeviceFingerprint() {
+  // Check if already generated this session
+  var stored = localStorage.getItem('lrk_device_fp');
+  if (stored) return stored;
+
+  // Generate from stable browser characteristics
+  var components = [
+    navigator.userAgent,
+    navigator.language,
+    screen.width + 'x' + screen.height,
+    screen.colorDepth,
+    new Date().getTimezoneOffset(),
+    navigator.hardwareConcurrency || '',
+    navigator.platform || '',
+  ];
+
+  // Simple hash
+  var str = components.join('|');
+  var hash = 0;
+  for (var i = 0; i < str.length; i++) {
+    var chr = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0;
+  }
+  var fp = 'FP' + Math.abs(hash).toString(36).toUpperCase();
+  localStorage.setItem('lrk_device_fp', fp);
+  return fp;
+}
 
 // ── STATE ─────────────────────────────────────────────────────────────────
 var state = {
@@ -295,12 +324,14 @@ var state = {
   userLat: null, userLng: null,
   gpsReady: false,
   nameChangedBeforeAction: false,
+  deviceFp: null,
   lastStoredName: null,
   todayLog: []
 };
 
 // ── INIT ──────────────────────────────────────────────────────────────────
 window.addEventListener('load', function() {
+  state.deviceFp = getDeviceFingerprint();
   var saved = localStorage.getItem('lrk_facer');
   if (saved) {
     var d = JSON.parse(saved);
@@ -488,7 +519,8 @@ function doCheckAction() {
     location:    locName,
     gpsCoords:   gpsCoords,
     distanceM:   dist,
-    nameChanged: nameChanged ? 'TAIP' : 'ne'
+    nameChanged: nameChanged ? 'TAIP' : 'ne',
+    deviceFp:    state.deviceFp || getDeviceFingerprint()
   };
 
   // Send to Google Sheet
@@ -585,6 +617,7 @@ function renderLog() {
 function showLastAction(action, time, loc, nameChanged) {
   var card = document.getElementById('card-last');
   var info = document.getElementById('last-info');
+  var fp   = state.deviceFp || getDeviceFingerprint();
   card.style.display = 'block';
   info.innerHTML =
     '<div class="info-row"><span class="info-label">Veiksmas</span>'
@@ -593,6 +626,8 @@ function showLastAction(action, time, loc, nameChanged) {
     +'<span class="info-val">'+formatTime(time)+'</span></div>'
     +'<div class="info-row"><span class="info-label">Lokacija</span>'
     +'<span class="info-val" style="max-width:200px;text-align:right">'+loc+'</span></div>'
+    +'<div class="info-row"><span class="info-label">Įrenginio kodas</span>'
+    +'<span class="info-val" style="font-size:11px;color:var(--gray)">'+fp+'</span></div>'
     +(nameChanged?'<div class="info-row"><span class="info-label">⚠ Vardas keistas</span>'
     +'<span class="info-val" style="color:#e74c3c">TAIP</span></div>':'');
 }
