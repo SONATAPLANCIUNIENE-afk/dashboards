@@ -1,0 +1,144 @@
+
+<style>
+:root {
+  --lrk-red: #E2001A;
+  --lrk-red-light: #fbeaec;
+  --lrk-red-dark: #b5001a;
+  --lrk-gray: #f5f5f5;
+  --lrk-border: #e0e0e0;
+  --lrk-text: #1a1a1a;
+  --lrk-muted: #666;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+body { background: transparent; }
+.wrap { padding: 0.5rem 0 1.5rem; }
+
+.header { display: flex; align-items: center; gap: 14px; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2.5px solid var(--lrk-red); }
+.cross { width: 36px; height: 36px; position: relative; flex-shrink: 0; }
+.cross-h { position: absolute; top: 50%; left: 0; width: 100%; height: 34%; background: var(--lrk-red); transform: translateY(-50%); }
+.cross-v { position: absolute; left: 50%; top: 0; height: 100%; width: 34%; background: var(--lrk-red); transform: translateX(-50%); }
+.header-title { font-size: 17px; font-weight: 600; color: var(--lrk-text); letter-spacing: 0.01em; }
+.header-sub { font-size: 12px; color: var(--lrk-muted); margin-top: 2px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+.card { background: #fff; border: 0.5px solid var(--lrk-border); border-radius: 6px; padding: 14px 12px; text-align: center; }
+.card.highlight { border-top: 3px solid var(--lrk-red); background: var(--lrk-red-light); }
+.card-label { font-size: 11px; color: var(--lrk-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+.card-val { font-size: 22px; font-weight: 600; color: var(--lrk-text); }
+.card.highlight .card-val { color: var(--lrk-red-dark); }
+.card-val.warn { color: #b45000; }
+.card-val.info { color: #1a5fa8; }
+
+.panel { background: #fff; border: 0.5px solid var(--lrk-border); border-radius: 6px; padding: 1.2rem; margin-bottom: 1rem; }
+.panel-title { font-size: 12px; font-weight: 600; color: var(--lrk-muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 14px; }
+
+.row { display: flex; align-items: center; gap: 12px; margin-bottom: 13px; }
+.row:last-child { margin-bottom: 0; }
+.row label { font-size: 13px; color: var(--lrk-muted); min-width: 140px; }
+.row input[type=range] { flex: 1; accent-color: var(--lrk-red); cursor: pointer; }
+.row input[type=date] { flex: 1; font-size: 13px; border: 0.5px solid var(--lrk-border); border-radius: 4px; padding: 6px 8px; color: var(--lrk-text); background: #fff; }
+.row .val { font-size: 13px; font-weight: 600; color: var(--lrk-text); min-width: 28px; text-align: right; }
+
+.calc-box { background: var(--lrk-gray); border-left: 3px solid var(--lrk-red); border-radius: 0 6px 6px 0; padding: 1rem 1.2rem; font-size: 13px; color: var(--lrk-muted); line-height: 1.9; }
+.calc-box strong { color: var(--lrk-text); }
+
+.footer { margin-top: 1rem; font-size: 11px; color: var(--lrk-muted); display: flex; align-items: center; gap: 6px; }
+.footer-dot { width: 6px; height: 6px; background: var(--lrk-red); border-radius: 50%; }
+</style>
+
+<div class="wrap">
+  <div class="header">
+    <div class="cross" aria-hidden="true"><div class="cross-h"></div><div class="cross-v"></div></div>
+    <div>
+      <div class="header-title">Atostogų dienų skaičiuoklė</div>
+      <div class="header-sub">Lietuvos Raudonasis Kryžius</div>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card">
+      <div class="card-label">Norma / metai</div>
+      <div class="card-val" id="cNorma">20 d.</div>
+    </div>
+    <div class="card highlight">
+      <div class="card-label" id="cSukaupta-label">Sukauptos iki 07-31</div>
+      <div class="card-val" id="cSukaupta">—</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Panaudota</div>
+      <div class="card-val warn" id="cPanaudota">2 d.</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Likutis</div>
+      <div class="card-val info" id="cLikutis">—</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Parametrai</div>
+    <div class="row">
+      <label>Norma (d. / metus):</label>
+      <input type="range" min="14" max="40" value="20" step="1" id="rNorma" />
+      <span class="val" id="oNorma">20</span>
+    </div>
+    <div class="row">
+      <label>Pradžios data:</label>
+      <input type="date" id="dPradzia" value="2026-02-05" />
+    </div>
+    <div class="row">
+      <label>Skaičiuoti iki:</label>
+      <input type="date" id="dIki" value="2026-07-31" />
+    </div>
+    <div class="row">
+      <label>Panaudota (d.):</label>
+      <input type="range" min="0" max="40" value="2" step="1" id="rPanaudota" />
+      <span class="val" id="oPanaudota">2</span>
+    </div>
+  </div>
+
+  <div class="calc-box" id="calcBox"></div>
+
+  <div class="footer"><div class="footer-dot"></div>Skaičiavimas pagal proporcinio kaupimo principą (DK 136 str.)</div>
+</div>
+
+<script>
+function fmtDate(d) {
+  return d.toLocaleDateString('lt-LT', { month: '2-digit', day: '2-digit' }).replace('.', '-').replace('.','');
+}
+function shortDate(dateStr) {
+  const parts = dateStr.split('-');
+  return parts[1] + '-' + parts[2];
+}
+function calc() {
+  const norma = parseInt(document.getElementById('rNorma').value);
+  const panaudota = parseInt(document.getElementById('rPanaudota').value);
+  const pradzia = new Date(document.getElementById('dPradzia').value);
+  const iki = new Date(document.getElementById('dIki').value);
+  const ikiStr = document.getElementById('dIki').value;
+
+  document.getElementById('oNorma').textContent = norma;
+  document.getElementById('oPanaudota').textContent = panaudota;
+
+  const dienos = Math.round((iki - pradzia) / 86400000) + 1;
+  const sukaupta = (norma / 365) * dienos;
+  const likutis = sukaupta - panaudota;
+
+  document.getElementById('cNorma').textContent = norma + ' d.';
+  document.getElementById('cSukaupta').textContent = sukaupta.toFixed(1) + ' d.';
+  document.getElementById('cPanaudota').textContent = panaudota + ' d.';
+  document.getElementById('cLikutis').textContent = likutis.toFixed(1) + ' d.';
+
+  const sd = shortDate(ikiStr);
+  document.getElementById('cSukaupta-label').textContent = 'Sukauptos iki ' + sd;
+
+  document.getElementById('calcBox').innerHTML =
+    'Dirbtų dienų skaičius: <strong>' + dienos + '</strong> ' +
+    '(nuo ' + pradzia.toLocaleDateString('lt-LT') + ' iki ' + iki.toLocaleDateString('lt-LT') + ')<br>' +
+    'Kaupimo formulė: ' + norma + ' d. × ' + dienos + ' d. ÷ 365 d. = <strong>' + sukaupta.toFixed(2) + ' d.</strong><br>' +
+    'Atimama panaudota: ' + sukaupta.toFixed(2) + ' − ' + panaudota + ' = <strong>' + likutis.toFixed(2) + ' d.</strong>';
+}
+['rNorma','rPanaudota','dPradzia','dIki'].forEach(id =>
+  document.getElementById(id).addEventListener('input', calc)
+);
+calc();
+</script>
